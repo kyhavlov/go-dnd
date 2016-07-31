@@ -31,7 +31,7 @@ func (action *NewPlayerAction) Process(w *ecs.World, dt float32) bool {
 		Height:   TileWidth,
 	}
 	player.RenderComponent = common.RenderComponent{
-		Drawable: sheet.Cell(132),
+		Drawable: sheet.Cell(594 + int(action.PlayerID)),
 		Scale:    engo.Point{1, 1},
 	}
 	player.RenderComponent.SetZIndex(100)
