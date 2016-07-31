@@ -2,9 +2,9 @@ package main
 
 import (
 	"engo.io/ecs"
-	"engo.io/engo/common"
 	"engo.io/engo"
-	"log"
+	"engo.io/engo/common"
+	log "github.com/Sirupsen/logrus"
 	"math/rand"
 )
 
@@ -16,52 +16,66 @@ type Tile struct {
 	ecs.BasicEntity
 	common.RenderComponent
 	common.SpaceComponent
+	Sprite int
 }
 
-type TileSystem struct {
-	tiles [MapWidth][MapHeight]Tile
+type GridPoint struct {
+	X int
+	Y int
 }
 
-func TileToPoint(x, y int) engo.Point {
-	return engo.Point{float32(x*TileWidth), float32(y*TileWidth)}
+func (gp *GridPoint) toPixels() engo.Point {
+	return engo.Point{float32(gp.X * TileWidth), float32(gp.Y * TileWidth)}
 }
 
-func createMap(render *common.RenderSystem, input *InputSystem) {
-	sheet := common.NewSpritesheetFromFile("textures/dungeon2x.png", TileWidth, TileWidth)
-
-	if sheet == nil {
-		log.Println("Unable to load texture file")
-	}
-
-	player := Player{BasicEntity: ecs.NewBasic()}
-	player.SpaceComponent = common.SpaceComponent{
-		Position: TileToPoint(3, 6),
-		Width:    TileWidth,
-		Height:   TileWidth,
-	}
-	player.RenderComponent = common.RenderComponent{
-		Drawable: sheet.Cell(132),
-		Scale:    engo.Point{1, 1},
-	}
+func createMap(render *common.RenderSystem, input *InputSystem) NetworkMessage {
+	tileCreations := make([]Action, 0)
 
 	for i := 0; i < MapWidth; i++ {
 		for j := 0; j < MapHeight; j++ {
-			tile := Tile{BasicEntity: ecs.NewBasic()}
-			tile.SpaceComponent = common.SpaceComponent{
-				Position: engo.Point{float32(i*TileWidth), float32(j*TileWidth)},
-				Width:    TileWidth,
-				Height:   TileWidth,
+			newTile := &NewTileAction{
+				SpaceComponent: common.SpaceComponent{
+					Position: engo.Point{float32(i * TileWidth), float32(j * TileWidth)},
+					Width:    TileWidth,
+					Height:   TileWidth,
+				},
+				Sprite: 861 + rand.Intn(8),
 			}
 
-			tile.RenderComponent = common.RenderComponent{
-				Drawable: sheet.Cell(861 + rand.Intn(8)),
-				Scale:    engo.Point{1, 1},
-			}
-
-			render.Add(&tile.BasicEntity, &tile.RenderComponent, &tile.SpaceComponent)
+			tileCreations = append(tileCreations, newTile)
 		}
 	}
 
-	render.Add(&player.BasicEntity, &player.RenderComponent, &player.SpaceComponent)
-	input.player = &player
+	return NetworkMessage{Actions: tileCreations}
+}
+
+type NewTileAction struct {
+	common.RenderComponent
+	common.SpaceComponent
+	Sprite int
+}
+
+func (action *NewTileAction) Process(w *ecs.World, dt float32) bool {
+	sheet := common.NewSpritesheetFromFile("textures/dungeon2x.png", TileWidth, TileWidth)
+
+	if sheet == nil {
+		log.Fatalf("Unable to load texture file")
+	}
+
+	tile := Tile{}
+	tile.BasicEntity = ecs.NewBasic()
+	tile.SpaceComponent = action.SpaceComponent
+	tile.RenderComponent = common.RenderComponent{
+		Drawable: sheet.Cell(action.Sprite),
+		Scale:    engo.Point{1, 1},
+	}
+
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *common.RenderSystem:
+			sys.Add(&tile.BasicEntity, &tile.RenderComponent, &tile.SpaceComponent)
+		}
+	}
+
+	return true
 }
