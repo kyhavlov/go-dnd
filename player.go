@@ -20,7 +20,7 @@ type NewPlayerAction struct {
 }
 
 func (action *NewPlayerAction) Process(w *ecs.World, dt float32) bool {
-	sheet := common.NewSpritesheetFromFile("textures/dungeon2x.png", TileWidth, TileWidth)
+	sheet := common.NewSpritesheetFromFile(SpritesheetPath, TileWidth, TileWidth)
 
 	player := Player{
 		BasicEntity: ecs.NewBasic(),

@@ -24,8 +24,7 @@ func (*DungeonScene) Type() string { return "dnd sim" }
 // Preload is called before loading any assets from the disk,
 // to allow you to register / queue them
 func (*DungeonScene) Preload() {
-	engo.Files.Load("textures/dungeon.png")
-	engo.Files.Load("textures/dungeon2x.png")
+	engo.Files.Load(SpritesheetPath)
 }
 
 // Setup is called before the main loop starts. It allows you
@@ -65,8 +64,14 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	}
 
 	world.AddSystem(render)
+
 	world.AddSystem(&common.MouseSystem{})
+	engo.Input.RegisterAxis(engo.DefaultHorizontalAxis, engo.AxisKeyPair{engo.A, engo.D})
+	engo.Input.RegisterAxis(engo.DefaultVerticalAxis, engo.AxisKeyPair{engo.W, engo.S})
+	world.AddSystem(common.NewKeyboardScroller(400, engo.DefaultHorizontalAxis, engo.DefaultVerticalAxis))
+	world.AddSystem(&common.MouseZoomer{-0.125})
 	world.AddSystem(input)
+
 	world.AddSystem(action)
 	world.AddSystem(&MoveSystem{})
 	world.AddSystem(&NetworkSystem{})
@@ -87,9 +92,9 @@ func main() {
 	}
 
 	gob.Register(&MoveAction{})
+	gob.Register(&SetPlayerAction{})
 	gob.Register(&NewPlayerAction{})
 	gob.Register(&NewTileAction{})
-	gob.Register(&SetPlayerAction{})
 
 	scene := &DungeonScene{}
 	if len(os.Args) > 1 && os.Args[1] == "server" {
@@ -99,7 +104,7 @@ func main() {
 		scene.serverRoom = serverRoom
 		log.Info("Hosting server")
 	} else {
-		conn, err := net.Dial("tcp", "127.0.0.1:8999")
+		conn, err := net.Dial("tcp", "linux-server:8999")
 		if err != nil {
 			log.Fatalf("Error connecting to server: %s", err)
 		} else {

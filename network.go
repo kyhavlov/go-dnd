@@ -31,8 +31,8 @@ func (ns *NetworkSystem) nextId() NetworkID {
 	ns.networkIdCounter += 1
 	return ns.networkIdCounter
 }
-func (ms *NetworkSystem) Update(dt float32)             {}
-func (ms *NetworkSystem) Remove(entity ecs.BasicEntity) {}
+func (ns *NetworkSystem) Update(dt float32)             {}
+func (ns *NetworkSystem) Remove(entity ecs.BasicEntity) {}
 
 type Client struct {
 	incoming chan NetworkMessage

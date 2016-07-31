@@ -8,6 +8,7 @@ import (
 	"math/rand"
 )
 
+const SpritesheetPath = "textures/dungeon2x.png"
 const TileWidth = 64
 const MapWidth = 30
 const MapHeight = 20
@@ -34,8 +35,8 @@ func createMap(render *common.RenderSystem, input *InputSystem) NetworkMessage {
 			newTile := &NewTileAction{
 				SpaceComponent: common.SpaceComponent{
 					Position: engo.Point{float32(i * TileWidth), float32(j * TileWidth)},
-					Width:    TileWidth,
-					Height:   TileWidth,
+					Width:    0,
+					Height:   0,
 				},
 				Sprite: 861 + rand.Intn(8),
 			}
@@ -54,7 +55,7 @@ type NewTileAction struct {
 }
 
 func (action *NewTileAction) Process(w *ecs.World, dt float32) bool {
-	sheet := common.NewSpritesheetFromFile("textures/dungeon2x.png", TileWidth, TileWidth)
+	sheet := common.NewSpritesheetFromFile(SpritesheetPath, TileWidth, TileWidth)
 
 	if sheet == nil {
 		log.Fatalf("Unable to load texture file")
