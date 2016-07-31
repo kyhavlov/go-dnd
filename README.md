@@ -2,7 +2,7 @@ setup:
 ```
 go get -u engo.io/engo
 go get
-mkdir -p assets/textures
-curl -o assets/textures/dungeon.png http://opengameart.org/sites/default/files/DungeonCrawl_ProjectUtumnoTileset_0.png
+curl -O http://www.mediafire.com/download/kvxb24rvmj1srcb/assets.zip
+unzip assets.zip
 go build
 ```
