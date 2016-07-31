@@ -104,7 +104,7 @@ func main() {
 		scene.serverRoom = serverRoom
 		log.Info("Hosting server")
 	} else {
-		conn, err := net.Dial("tcp", "linux-server:8999")
+		conn, err := net.Dial("tcp", "localhost:8999")
 		if err != nil {
 			log.Fatalf("Error connecting to server: %s", err)
 		} else {
