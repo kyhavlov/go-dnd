@@ -89,6 +89,7 @@ func main() {
 	gob.Register(&MoveAction{})
 	gob.Register(&NewPlayerAction{})
 	gob.Register(&NewTileAction{})
+	gob.Register(&SetPlayerAction{})
 
 	scene := &DungeonScene{}
 	if len(os.Args) > 1 && os.Args[1] == "server" {

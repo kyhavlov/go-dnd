@@ -14,9 +14,7 @@ const MapHeight = 20
 
 type Tile struct {
 	ecs.BasicEntity
-	common.RenderComponent
-	common.SpaceComponent
-	Sprite int
+	NewTileAction
 }
 
 type GridPoint struct {

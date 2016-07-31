@@ -17,6 +17,23 @@ type InputSystem struct {
 	mouseTracker MouseTracker
 	player       *Player
 	outgoing     chan NetworkMessage
+	PlayerID
+}
+
+type SetPlayerAction struct {
+	PlayerID
+}
+
+func (set *SetPlayerAction) Process(w *ecs.World, dt float32) bool {
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *InputSystem:
+			sys.PlayerID = set.PlayerID
+			log.Info("player position set to: ", set.PlayerID)
+		}
+	}
+
+	return true
 }
 
 type MoveAction struct {

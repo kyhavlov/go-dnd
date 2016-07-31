@@ -15,6 +15,7 @@ type Player struct {
 }
 
 type NewPlayerAction struct {
+	PlayerID
 	Location GridPoint
 }
 
@@ -49,7 +50,9 @@ func (action *NewPlayerAction) Process(w *ecs.World, dt float32) bool {
 		case *MoveSystem:
 			sys.Add(&player.BasicEntity, &player.SpaceComponent, player.NetworkID)
 		case *InputSystem:
-			sys.player = &player
+			if sys.PlayerID == action.PlayerID {
+				sys.player = &player
+			}
 		}
 	}
 

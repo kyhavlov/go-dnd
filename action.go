@@ -31,7 +31,21 @@ func (ds *ActionSystem) Update(dt float32) {
 				history := NetworkMessage{
 					Actions: ds.actionHistory,
 				}
+				setID := &SetPlayerAction{message.Sender}
+				newPlayer := &NewPlayerAction{
+					PlayerID: message.Sender,
+					Location: GridPoint{
+						X: 6,
+						Y: 4,
+					},
+				}
+				history.Actions = append(history.Actions, setID)
+
+				newPlayer.Process(ds.world, dt)
 				ds.serverRoom.SendToClient(message.Sender, history)
+				ds.serverRoom.SendToAllClients(NetworkMessage{
+					Actions: []Action{newPlayer},
+				})
 			}
 
 			for _, action := range message.Actions {
