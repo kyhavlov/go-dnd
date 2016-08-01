@@ -88,7 +88,6 @@ type ServerRoom struct {
 	clients  map[PlayerID]*Client
 	joins    chan net.Conn
 	incoming chan NetworkMessage
-	outgoing chan NetworkMessage
 }
 
 func (room *ServerRoom) NextId() PlayerID {
@@ -135,7 +134,6 @@ func NewServerRoom() *ServerRoom {
 		clients:  make(map[PlayerID]*Client),
 		joins:    make(chan net.Conn),
 		incoming: make(chan NetworkMessage),
-		outgoing: make(chan NetworkMessage),
 	}
 
 	room.Listen()

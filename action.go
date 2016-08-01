@@ -34,7 +34,7 @@ func (ds *ActionSystem) Update(dt float32) {
 				setID := &SetPlayerAction{message.Sender}
 				newPlayer := &NewPlayerAction{
 					PlayerID: message.Sender,
-					Location: GridPoint{
+					GridPoint: GridPoint{
 						X: 6,
 						Y: 4,
 					},

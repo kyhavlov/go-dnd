@@ -14,9 +14,10 @@ type Player struct {
 	common.SpaceComponent
 }
 
+// Spawns a player with the given ID at the given GridPoint
 type NewPlayerAction struct {
 	PlayerID
-	Location GridPoint
+	GridPoint
 }
 
 func (action *NewPlayerAction) Process(w *ecs.World, dt float32) bool {
@@ -26,7 +27,7 @@ func (action *NewPlayerAction) Process(w *ecs.World, dt float32) bool {
 		BasicEntity: ecs.NewBasic(),
 	}
 	player.SpaceComponent = common.SpaceComponent{
-		Position: action.Location.toPixels(),
+		Position: action.GridPoint.toPixels(),
 		Width:    TileWidth,
 		Height:   TileWidth,
 	}
@@ -56,7 +57,7 @@ func (action *NewPlayerAction) Process(w *ecs.World, dt float32) bool {
 		}
 	}
 
-	log.Info("New player added at ", action.Location)
+	log.Info("New player added at ", action.GridPoint)
 
 	return true
 }

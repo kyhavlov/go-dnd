@@ -20,6 +20,7 @@ type InputSystem struct {
 	PlayerID
 }
 
+// Sets the PlayerID of the local InputSystem, so we know which player we are and what we control
 type SetPlayerAction struct {
 	PlayerID
 }
@@ -36,6 +37,7 @@ func (set *SetPlayerAction) Process(w *ecs.World, dt float32) bool {
 	return true
 }
 
+// Moves the entity with the given ID to NewLocation
 type MoveAction struct {
 	Id          NetworkID
 	NewLocation engo.Point

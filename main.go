@@ -18,7 +18,7 @@ type DungeonScene struct {
 	outgoing chan NetworkMessage
 }
 
-// Type uniquely defines your game type
+// A unique identifier for the scene
 func (*DungeonScene) Type() string { return "dnd sim" }
 
 // Preload is called before loading any assets from the disk,
@@ -48,7 +48,7 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 		action.serverRoom = scene.serverRoom
 		go SendMessage(input.outgoing, NetworkMessage{
 			Actions: []Action{&NewPlayerAction{
-				Location: GridPoint{
+				GridPoint: GridPoint{
 					X: 6,
 					Y: 4,
 				},
@@ -104,7 +104,7 @@ func main() {
 		scene.serverRoom = serverRoom
 		log.Info("Hosting server")
 	} else {
-		conn, err := net.Dial("tcp", "localhost:8999")
+		conn, err := net.Dial("tcp", "127.0.0.1:8999")
 		if err != nil {
 			log.Fatalf("Error connecting to server: %s", err)
 		} else {
