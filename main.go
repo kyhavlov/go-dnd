@@ -10,6 +10,8 @@ import (
 	"encoding/gob"
 	log "github.com/Sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+	//"engo.io/engo/demos/demoutils"
+	//"image/color"
 )
 
 type DungeonScene struct {
@@ -25,6 +27,12 @@ func (*DungeonScene) Type() string { return "dnd sim" }
 // to allow you to register / queue them
 func (*DungeonScene) Preload() {
 	engo.Files.Load(SpritesheetPath)
+
+	// Load a font
+	err := engo.Files.Load("fonts/Roboto-Regular.ttf")
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Setup is called before the main loop starts. It allows you
@@ -76,6 +84,8 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	world.AddSystem(action)
 	world.AddSystem(&MoveSystem{})
 	world.AddSystem(&NetworkSystem{})
+
+	NewMouseCoordPanel(world)
 }
 
 func main() {
