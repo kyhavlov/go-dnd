@@ -33,7 +33,7 @@ func createMap(render *common.RenderSystem, input *InputSystem) NetworkMessage {
 
 	rooms, hallways := generateZone(987988)
 	for _, room := range rooms {
-		log.Println(room)
+		log.Debug(room)
 		for i := 0; i < room.Size; i++ {
 			for j := 0; j < room.Size; j++ {
 				newTile := &NewTileAction{
@@ -208,8 +208,8 @@ func addNewRoom(id int, random *rand.Rand, edgeRoom *RoomNode) (*RoomNode, []Gri
 		hallway = append(hallway, GridPoint{i, start.Y})
 	}
 
-	log.Infof("Hallway for rooms (%d, %d) to (%d, %d), start: (%d, %d), end: (%d, %d)", edgeRoom.X, edgeRoom.Y, newRoom.X, newRoom.Y, start.X, start.Y, end.X, end.Y)
-	log.Infof("%v", hallway)
+	//log.Infof("Hallway for rooms (%d, %d) to (%d, %d), start: (%d, %d), end: (%d, %d)", edgeRoom.X, edgeRoom.Y, newRoom.X, newRoom.Y, start.X, start.Y, end.X, end.Y)
+	//log.Infof("%v", hallway)
 
 	return newRoom, hallway
 }
@@ -256,11 +256,12 @@ func generateZone(seed int64) (Rooms, []GridPoint) {
 	for depthReached < dungeonLength {
 		idInc++
 		newRoom := &RoomNode{}
+		hallway := make([]GridPoint, 0)
 		madeNewRoom := false
 
 		// try to spawn a new room, starting from the furthest room
 		for _, edgeRoom := range rooms {
-			newRoom, hallway := addNewRoom(idInc, random, edgeRoom)
+			newRoom, hallway = addNewRoom(idInc, random, edgeRoom)
 
 			if !roomIsValid(newRoom, rooms) {
 				continue
@@ -277,11 +278,11 @@ func generateZone(seed int64) (Rooms, []GridPoint) {
 		}
 
 		if !madeNewRoom {
-			log.Info("Couldn't make new room, trying again")
+			log.Debugf("Couldn't make new room, trying again")
 			continue
 		}
 
-		log.Infof("Added new room with id %d and depth %d", newRoom.Id, newRoom.depth)
+		log.Debugf("Added new room with id %d and depth %d", newRoom.Id, newRoom.depth)
 
 		// Recalculate the depth of the rooms (the number of rooms away from the start they are)
 		for _, room := range rooms {
@@ -300,11 +301,11 @@ func generateZone(seed int64) (Rooms, []GridPoint) {
 
 			current.visited = true
 
-			spaces := ""
+			/*spaces := ""
 			for i := 0; i < current.depth; i++ {
 				spaces = spaces + "-"
 			}
-			log.Infof("%s %d", spaces, current.Id)
+			log.Infof("%s %d", spaces, current.Id)*/
 
 			for _, neighbor := range current.Neighbors {
 				if !neighbor.visited {
