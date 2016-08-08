@@ -50,7 +50,6 @@ func (ds *ActionSystem) Update(dt float32) {
 
 			for _, action := range message.Actions {
 				action.Process(ds.world, dt)
-				log.Info("processed action from client #", message.Sender)
 				ds.actionHistory = append(ds.actionHistory, action)
 				if ds.serverRoom != nil {
 					ds.serverRoom.SendToAllClients(message)

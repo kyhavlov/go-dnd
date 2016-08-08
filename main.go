@@ -64,6 +64,7 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	}
 
 	world.AddSystem(render)
+	common.CameraBounds.Max = engo.Point{10000, 10000}
 
 	world.AddSystem(&common.MouseSystem{})
 	engo.Input.RegisterAxis(engo.DefaultHorizontalAxis, engo.AxisKeyPair{engo.A, engo.D})
