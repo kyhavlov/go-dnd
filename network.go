@@ -132,7 +132,7 @@ func (room *ServerRoom) Listen() {
 	}()
 }
 
-func NewServerRoom() *ServerRoom {
+func newServerRoom() *ServerRoom {
 	room := &ServerRoom{
 		clients:  make(map[PlayerID]*Client),
 		joins:    make(chan net.Conn),
@@ -154,12 +154,14 @@ func runServer(listener net.Listener, room *ServerRoom) {
 	}
 }
 
-func startServer() *ServerRoom {
-	room := NewServerRoom()
+func StartServer(address string) *ServerRoom {
+	room := newServerRoom()
 
-	listener, err := net.Listen("tcp", ":8999")
+	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Errorf("[server] Error binding on port 8999: %s", err)
+		log.Errorf("[server] Error binding on %s %s", address, err)
+	} else {
+		log.Infof("Hosting server at %v", listener.Addr())
 	}
 
 	go runServer(listener, room)

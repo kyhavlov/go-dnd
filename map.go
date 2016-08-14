@@ -14,11 +14,6 @@ const TileWidth = 64
 const MapWidth = 30
 const MapHeight = 20
 
-type Tile struct {
-	ecs.BasicEntity
-	NewTileEvent
-}
-
 type GridPoint struct {
 	X int
 	Y int
@@ -26,6 +21,11 @@ type GridPoint struct {
 
 func (gp *GridPoint) toPixels() engo.Point {
 	return engo.Point{float32(gp.X * TileWidth), float32(gp.Y * TileWidth)}
+}
+
+type Tile struct {
+	ecs.BasicEntity
+	NewTileEvent
 }
 
 type NewTileEvent struct {
@@ -184,7 +184,7 @@ func roomIsValid(room *RoomNode, rooms []*RoomNode) bool {
 }
 
 // Generates a map from a seed number
-func GenerateZone(seed int64) []Event {
+func GenerateMap(seed int64) []Event {
 	random := rand.New(rand.NewSource(seed))
 	rooms := make(Rooms, 0)
 	hallways := make([]GridPoint, 0)
@@ -309,7 +309,8 @@ func GenerateZone(seed int64) []Event {
 		}
 	}
 
-	tiles := make([]Event, 0)
+	events := make([]Event, 0)
+	log.Infof("Map bounds: %d wide, %d tall", maxPoint.X-offset.X, maxPoint.Y-offset.Y)
 
 	// Create the tiles for the map based on the rooms/hallways generated
 	for _, room := range rooms {
@@ -328,7 +329,7 @@ func GenerateZone(seed int64) []Event {
 					Sprite: 861 + rand.Intn(8),
 				}
 
-				tiles = append(tiles, newTile)
+				events = append(events, newTile)
 			}
 		}
 	}
@@ -346,8 +347,8 @@ func GenerateZone(seed int64) []Event {
 			Sprite: 861 + rand.Intn(8),
 		}
 
-		tiles = append(tiles, newTile)
+		events = append(events, newTile)
 	}
 
-	return tiles
+	return events
 }

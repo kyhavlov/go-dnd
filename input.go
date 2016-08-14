@@ -25,31 +25,12 @@ type SetPlayerEvent struct {
 	PlayerID
 }
 
-func (set *SetPlayerEvent) Process(w *ecs.World, dt float32) bool {
+func (event *SetPlayerEvent) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *InputSystem:
-			sys.PlayerID = set.PlayerID
-			log.Info("player position set to: ", set.PlayerID)
-		}
-	}
-
-	return true
-}
-
-// Moves the entity with the given ID to NewLocation
-type MoveEvent struct {
-	Id          NetworkID
-	NewLocation engo.Point
-}
-
-func (move *MoveEvent) Process(w *ecs.World, dt float32) bool {
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *MoveSystem:
-			sys.SpaceComponents[move.Id].Position.X = move.NewLocation.X
-			sys.SpaceComponents[move.Id].Position.Y = move.NewLocation.Y
-			log.Info("player position set to: ", sys.SpaceComponents[move.Id].Position)
+			sys.PlayerID = event.PlayerID
+			log.Info("player ID set to: ", event.PlayerID)
 		}
 	}
 

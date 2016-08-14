@@ -12,8 +12,12 @@ import (
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 )
 
+// The main scene for the game, representing a level
 type DungeonScene struct {
+	// The server room to use if we're the server, nil if we're not
 	serverRoom *ServerRoom
+
+	// Channels to send/receive network messages
 	incoming   chan NetworkMessage
 	outgoing   chan NetworkMessage
 }
@@ -50,8 +54,15 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 		outgoing: scene.outgoing,
 	}
 
+	// Generate the map and add our player if we're the server, otherwise just ask the server to
+	// make a player for us. In the future the player entities should probably get created in a loop
+	// at world creation because it'll be launched from a lobby and we'll have the info to do that.
 	if scene.serverRoom != nil {
 		event.serverRoom = scene.serverRoom
+		SendMessage(input.outgoing, NetworkMessage{
+			Events: GenerateMap(34343221999),
+		})
+
 		SendMessage(input.outgoing, NetworkMessage{
 			Events: []Event{&NewPlayerEvent{
 				GridPoint: GridPoint{
@@ -59,10 +70,6 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 					Y: 4,
 				},
 			}},
-		})
-
-		SendMessage(input.outgoing, NetworkMessage{
-			Events: GenerateZone(34343221999),
 		})
 		log.Info("created map")
 	} else {
@@ -74,6 +81,7 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	world.AddSystem(render)
 	common.CameraBounds.Max = engo.Point{10000, 10000}
 
+	// Add our input systems (mouse/camera/camera scroll/input)
 	world.AddSystem(&common.MouseSystem{})
 	engo.Input.RegisterAxis(engo.DefaultHorizontalAxis, engo.AxisKeyPair{engo.A, engo.D})
 	engo.Input.RegisterAxis(engo.DefaultVerticalAxis, engo.AxisKeyPair{engo.W, engo.S})
@@ -81,6 +89,7 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	world.AddSystem(&common.MouseZoomer{-0.125})
 	world.AddSystem(input)
 
+	// Add the game logic systems (event/move/network)
 	world.AddSystem(event)
 	world.AddSystem(&MoveSystem{})
 	world.AddSystem(&NetworkSystem{})
@@ -102,19 +111,25 @@ func main() {
 		Height: 800,
 	}
 
+	// Register our different Event implementations with the gob package for serialization
+	// TODO: see if there's a way to do this automatically with reflection
 	gob.Register(&MoveEvent{})
 	gob.Register(&SetPlayerEvent{})
 	gob.Register(&NewPlayerEvent{})
 	gob.Register(&NewTileEvent{})
 
 	scene := &DungeonScene{}
+
+	// If we're the server, initialize a new server room and start listening for connections.
+	// Then, hook the server's incoming channel to both our scene's outgoing and incoming channels
+	// so that we can send our own actions directly to the server's input channel
 	if len(os.Args) > 1 && os.Args[1] == "server" {
-		serverRoom := startServer()
+		serverRoom := StartServer(":8999")
 		scene.incoming = serverRoom.incoming
 		scene.outgoing = serverRoom.incoming
 		scene.serverRoom = serverRoom
-		log.Info("Hosting server")
 	} else {
+		// If we're not a server, make a client and use its incoming/outgoing channels for the scene
 		conn, err := net.Dial("tcp", "127.0.0.1:8999")
 		if err != nil {
 			log.Fatalf("Error connecting to server: %s", err)
