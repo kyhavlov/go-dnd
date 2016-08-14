@@ -15,16 +15,19 @@ type NetworkMessage struct {
 	Sender    PlayerID
 	NewPlayer bool
 
-	Actions   []Action
+	Events []Event
 }
 
+// helper function to send a NetworkMessage asynchronously
 func SendMessage(channel chan NetworkMessage, message NetworkMessage) {
-	channel <- message
+	go func() {
+		channel <- message
+	}()
 }
 
 type NetworkSystem struct {
 	networkIdCounter NetworkID
-	myPlayerId int
+	myPlayerId       int
 }
 
 func (ns *NetworkSystem) nextId() NetworkID {

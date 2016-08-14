@@ -15,24 +15,24 @@ type Player struct {
 }
 
 // Spawns a player with the given ID at the given GridPoint
-type NewPlayerAction struct {
+type NewPlayerEvent struct {
 	PlayerID
 	GridPoint
 }
 
-func (action *NewPlayerAction) Process(w *ecs.World, dt float32) bool {
+func (event *NewPlayerEvent) Process(w *ecs.World, dt float32) bool {
 	sheet := common.NewSpritesheetFromFile(SpritesheetPath, TileWidth, TileWidth)
 
 	player := Player{
 		BasicEntity: ecs.NewBasic(),
 	}
 	player.SpaceComponent = common.SpaceComponent{
-		Position: action.GridPoint.toPixels(),
+		Position: event.GridPoint.toPixels(),
 		Width:    TileWidth,
 		Height:   TileWidth,
 	}
 	player.RenderComponent = common.RenderComponent{
-		Drawable: sheet.Cell(594 + int(action.PlayerID)),
+		Drawable: sheet.Cell(594 + int(event.PlayerID)),
 		Scale:    engo.Point{1, 1},
 	}
 	player.RenderComponent.SetZIndex(100)
@@ -51,13 +51,13 @@ func (action *NewPlayerAction) Process(w *ecs.World, dt float32) bool {
 		case *MoveSystem:
 			sys.Add(&player.BasicEntity, &player.SpaceComponent, player.NetworkID)
 		case *InputSystem:
-			if sys.PlayerID == action.PlayerID {
+			if sys.PlayerID == event.PlayerID {
 				sys.player = &player
 			}
 		}
 	}
 
-	log.Info("New player added at ", action.GridPoint)
+	log.Info("New player added at ", event.GridPoint)
 
 	return true
 }

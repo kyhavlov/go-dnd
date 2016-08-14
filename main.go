@@ -10,18 +10,16 @@ import (
 	"encoding/gob"
 	log "github.com/Sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
-	//"engo.io/engo/demos/demoutils"
-	//"image/color"
 )
 
 type DungeonScene struct {
 	serverRoom *ServerRoom
-	incoming chan NetworkMessage
-	outgoing chan NetworkMessage
+	incoming   chan NetworkMessage
+	outgoing   chan NetworkMessage
 }
 
 // A unique identifier for the scene
-func (*DungeonScene) Type() string { return "dnd sim" }
+func (*DungeonScene) Type() string { return "dnd" }
 
 // Preload is called before loading any assets from the disk,
 // to allow you to register / queue them
@@ -43,19 +41,19 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	input := &InputSystem{
 		outgoing: scene.outgoing,
 	}
-	action := &ActionSystem{
+	event := &EventSystem{
 		world: world,
 
-		actionHistory: make([]Action, 0),
+		eventHistory: make([]Event, 0),
 
 		incoming: scene.incoming,
 		outgoing: scene.outgoing,
 	}
 
 	if scene.serverRoom != nil {
-		action.serverRoom = scene.serverRoom
-		go SendMessage(input.outgoing, NetworkMessage{
-			Actions: []Action{&NewPlayerAction{
+		event.serverRoom = scene.serverRoom
+		SendMessage(input.outgoing, NetworkMessage{
+			Events: []Event{&NewPlayerEvent{
 				GridPoint: GridPoint{
 					X: 6,
 					Y: 4,
@@ -63,10 +61,12 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 			}},
 		})
 
-		go SendMessage(input.outgoing, createMap(render, input))
+		SendMessage(input.outgoing, NetworkMessage{
+			Events: GenerateZone(34343221999),
+		})
 		log.Info("created map")
 	} else {
-		go SendMessage(input.outgoing, NetworkMessage{
+		SendMessage(input.outgoing, NetworkMessage{
 			NewPlayer: true,
 		})
 	}
@@ -81,7 +81,7 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	world.AddSystem(&common.MouseZoomer{-0.125})
 	world.AddSystem(input)
 
-	world.AddSystem(action)
+	world.AddSystem(event)
 	world.AddSystem(&MoveSystem{})
 	world.AddSystem(&NetworkSystem{})
 
@@ -102,10 +102,10 @@ func main() {
 		Height: 800,
 	}
 
-	gob.Register(&MoveAction{})
-	gob.Register(&SetPlayerAction{})
-	gob.Register(&NewPlayerAction{})
-	gob.Register(&NewTileAction{})
+	gob.Register(&MoveEvent{})
+	gob.Register(&SetPlayerEvent{})
+	gob.Register(&NewPlayerEvent{})
+	gob.Register(&NewTileEvent{})
 
 	scene := &DungeonScene{}
 	if len(os.Args) > 1 && os.Args[1] == "server" {

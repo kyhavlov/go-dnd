@@ -10,11 +10,11 @@ import (
 
 type UiPanel struct {
 	ecs.BasicEntity
-	bg UiBackground
+	bg         UiBackground
 	textfields []UiText
-	position engo.Point
-	height float32
-	width float32
+	position   engo.Point
+	height     float32
+	width      float32
 }
 
 type UiText struct {
@@ -38,13 +38,13 @@ func NewMouseCoordPanel(world *ecs.World) *UiPanel {
 
 	// Create the panel background
 	bg := UiBackground{
-		BasicEntity: ecs.NewBasic(),
+		BasicEntity:     ecs.NewBasic(),
 		RenderComponent: common.RenderComponent{Drawable: common.Rectangle{BorderWidth: 1, BorderColor: color.White}, Color: bgColor},
-		SpaceComponent: common.SpaceComponent{Position: position, Width: width, Height: height},
+		SpaceComponent:  common.SpaceComponent{Position: position, Width: width, Height: height},
 	}
 
 	// Set the background camera-independent
-	bg.RenderComponent.SetZIndex(1) 			// zIndex > 0 (default)
+	bg.RenderComponent.SetZIndex(1) // zIndex > 0 (default)
 	bg.RenderComponent.SetShader(common.HUDShader)
 
 	for _, system := range world.Systems() {
@@ -55,12 +55,12 @@ func NewMouseCoordPanel(world *ecs.World) *UiPanel {
 	}
 
 	panel := &UiPanel{
-		BasicEntity : ecs.NewBasic(),
-		bg: bg,
-		textfields: make([]UiText, 0),
-		position: position,
-		height: height,
-		width: width,
+		BasicEntity: ecs.NewBasic(),
+		bg:          bg,
+		textfields:  make([]UiText, 0),
+		position:    position,
+		height:      height,
+		width:       width,
 	}
 
 	// Add text fields
@@ -82,9 +82,9 @@ func NewMouseCoordPanel(world *ecs.World) *UiPanel {
 		Text: "Mouse X position is : ",
 	}
 	xCoord.SetShader(common.HUDShader)
-	xCoord.SpaceComponent.Position.Set(position.X, position.Y + 12)
+	xCoord.SpaceComponent.Position.Set(position.X, position.Y+12)
 	xCoord.RenderComponent.SetZIndex(2)
-	panel.textfields = append(panel.textfields,xCoord)
+	panel.textfields = append(panel.textfields, xCoord)
 
 	yCoord := UiText{BasicEntity: ecs.NewBasic()}
 	yCoord.RenderComponent.Drawable = common.Text{
@@ -92,12 +92,9 @@ func NewMouseCoordPanel(world *ecs.World) *UiPanel {
 		Text: "Mouse Y position is : ",
 	}
 	yCoord.SetShader(common.HUDShader)
-	yCoord.SpaceComponent.Position.Set(position.X, position.Y + 36)
+	yCoord.SpaceComponent.Position.Set(position.X, position.Y+36)
 	yCoord.RenderComponent.SetZIndex(2)
-	panel.textfields = append(panel.textfields,yCoord)
-
-
-
+	panel.textfields = append(panel.textfields, yCoord)
 
 	for _, system := range world.Systems() {
 		switch sys := system.(type) {

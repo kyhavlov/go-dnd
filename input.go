@@ -21,11 +21,11 @@ type InputSystem struct {
 }
 
 // Sets the PlayerID of the local InputSystem, so we know which player we are and what we control
-type SetPlayerAction struct {
+type SetPlayerEvent struct {
 	PlayerID
 }
 
-func (set *SetPlayerAction) Process(w *ecs.World, dt float32) bool {
+func (set *SetPlayerEvent) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *InputSystem:
@@ -38,12 +38,12 @@ func (set *SetPlayerAction) Process(w *ecs.World, dt float32) bool {
 }
 
 // Moves the entity with the given ID to NewLocation
-type MoveAction struct {
+type MoveEvent struct {
 	Id          NetworkID
 	NewLocation engo.Point
 }
 
-func (move *MoveAction) Process(w *ecs.World, dt float32) bool {
+func (move *MoveEvent) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *MoveSystem:
@@ -77,12 +77,12 @@ func (input *InputSystem) Update(dt float32) {
 			float32(int(input.mouseTracker.MouseComponent.MouseY/TileWidth) * TileWidth),
 		}
 
-		move := &MoveAction{input.player.NetworkID, newLocation}
-		go SendMessage(input.outgoing, NetworkMessage{
-			Actions: []Action{move},
+		move := &MoveEvent{input.player.NetworkID, newLocation}
+		SendMessage(input.outgoing, NetworkMessage{
+			Events: []Event{move},
 		})
 
-		log.Info("Sent move action to input.outgoing")
+		log.Info("Sent move event to input.outgoing")
 	}
 }
 

@@ -5,52 +5,52 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-type ActionSystem struct {
+type EventSystem struct {
 	world *ecs.World
 
-	actionHistory []Action
+	eventHistory []Event
 
 	incoming   chan NetworkMessage
 	outgoing   chan NetworkMessage
 	serverRoom *ServerRoom
 }
 
-type Action interface {
+type Event interface {
 	Process(*ecs.World, float32) bool
 }
 
 // New is the initialisation of the System
-func (ds *ActionSystem) New(w *ecs.World) {}
+func (ds *EventSystem) New(w *ecs.World) {}
 
-func (ds *ActionSystem) Update(dt float32) {
+func (ds *EventSystem) Update(dt float32) {
 	select {
 	case message, ok := <-ds.incoming:
 		if ok {
 			if message.NewPlayer && ds.serverRoom != nil {
-				log.Info("sending action history to new player ", message.Sender)
+				log.Info("sending event history to new player ", message.Sender)
 				history := NetworkMessage{
-					Actions: ds.actionHistory,
+					Events: ds.eventHistory,
 				}
-				setID := &SetPlayerAction{message.Sender}
-				newPlayer := &NewPlayerAction{
+				setID := &SetPlayerEvent{message.Sender}
+				newPlayer := &NewPlayerEvent{
 					PlayerID: message.Sender,
 					GridPoint: GridPoint{
 						X: 6,
 						Y: 4,
 					},
 				}
-				history.Actions = append(history.Actions, setID)
+				history.Events = append(history.Events, setID)
 
 				newPlayer.Process(ds.world, dt)
 				ds.serverRoom.SendToClient(message.Sender, history)
 				ds.serverRoom.SendToAllClients(NetworkMessage{
-					Actions: []Action{newPlayer},
+					Events: []Event{newPlayer},
 				})
 			}
 
-			for _, action := range message.Actions {
-				action.Process(ds.world, dt)
-				ds.actionHistory = append(ds.actionHistory, action)
+			for _, event := range message.Events {
+				event.Process(ds.world, dt)
+				ds.eventHistory = append(ds.eventHistory, event)
 				if ds.serverRoom != nil {
 					ds.serverRoom.SendToAllClients(message)
 				}
@@ -62,4 +62,4 @@ func (ds *ActionSystem) Update(dt float32) {
 	}
 }
 
-func (ds *ActionSystem) Remove(entity ecs.BasicEntity) {}
+func (ds *EventSystem) Remove(entity ecs.BasicEntity) {}
