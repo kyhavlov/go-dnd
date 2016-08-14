@@ -29,39 +29,7 @@ func (gp *GridPoint) toPixels() engo.Point {
 }
 
 func createMap(render *common.RenderSystem, input *InputSystem) NetworkMessage {
-	tileCreations := make([]Action, 0)
-
-	rooms, hallways := generateZone(987988)
-	for _, room := range rooms {
-		log.Debug(room)
-		for i := 0; i < room.Size; i++ {
-			for j := 0; j < room.Size; j++ {
-				newTile := &NewTileAction{
-					SpaceComponent: common.SpaceComponent{
-						Position: engo.Point{float32((room.X+i) * TileWidth), float32((room.Y+j) * TileWidth)},
-						Width:    TileWidth,
-						Height:   TileWidth,
-					},
-					Sprite: 861 + rand.Intn(8),
-				}
-
-				tileCreations = append(tileCreations, newTile)
-			}
-		}
-	}
-
-	for _, square := range hallways {
-		newTile := &NewTileAction{
-			SpaceComponent: common.SpaceComponent{
-				Position: square.toPixels(),
-				Width:    TileWidth,
-				Height:   TileWidth,
-			},
-			Sprite: 861 + rand.Intn(8),
-		}
-
-		tileCreations = append(tileCreations, newTile)
-	}
+	tileCreations := generateZone(987988)
 
 	return NetworkMessage{Actions: tileCreations}
 }
@@ -95,6 +63,10 @@ func (action *NewTileAction) Process(w *ecs.World, dt float32) bool {
 	}
 
 	return true
+}
+
+type Map struct {
+	Tiles [][]Tile
 }
 
 type RoomNode struct {
@@ -143,20 +115,8 @@ func addNewRoom(id int, random *rand.Rand, edgeRoom *RoomNode) (*RoomNode, []Gri
 	}
 
 	// place room a random distance offset from selected edge room
-	xOffset := -4 + random.Intn(8)
-	yOffset := -4 + random.Intn(8)
-
-	if xOffset > 0 {
-		xOffset += edgeRoom.Size
-	} else {
-		xOffset -= newRoom.Size
-	}
-
-	if yOffset > 0 {
-		yOffset += edgeRoom.Size
-	} else {
-		yOffset -= newRoom.Size
-	}
+	xOffset := -6 + random.Intn(edgeRoom.Size + 12)
+	yOffset := -6 + random.Intn(edgeRoom.Size + 12)
 
 	newRoom.GridPoint = GridPoint{edgeRoom.X + xOffset, edgeRoom.Y + yOffset}
 
@@ -225,15 +185,16 @@ func roomIsValid(room *RoomNode, rooms []*RoomNode) bool {
 			Y: otherRoom.Y + otherRoom.Size,
 		}
 
-		if roomMax.X > otherRoom.X && room.X < otherMax.X && roomMax.Y > otherRoom.Y && room.Y < otherMax.Y {
+		// add 1 to the lengths so the walls of the rooms don't touch
+		if roomMax.X + 1 > otherRoom.X && room.X < otherMax.X + 1 && roomMax.Y + 1 > otherRoom.Y && room.Y < otherMax.Y + 1 {
 			return false
 		}
 	}
 	return true
 }
 
-// Generates a map from a seed number, returns rooms and hallways
-func generateZone(seed int64) (Rooms, []GridPoint) {
+// Generates a map from a seed number
+func generateZone(seed int64) []Action {
 	random := rand.New(rand.NewSource(seed))
 	rooms := make(Rooms, 0)
 	hallways := make([]GridPoint, 0)
@@ -243,7 +204,6 @@ func generateZone(seed int64) (Rooms, []GridPoint) {
 
 	startingRoom := &RoomNode{
 		Neighbors: make(map[int]*RoomNode),
-		GridPoint: GridPoint{50, 50},
 		Id: idInc,
 		Size: 4,
 		depth: 1,
@@ -319,7 +279,85 @@ func generateZone(seed int64) (Rooms, []GridPoint) {
 		depthReached = rooms[0].depth
 	}
 
-	rooms = append(rooms, startingRoom)
+	// Get the minimum X/Y values rooms were placed at so we can align the level to 0,0
+	offset := GridPoint{
+		X: startingRoom.X,
+		Y: startingRoom.Y,
+	}
 
-	return rooms, hallways
+	// and the maximum X/Y values so we know the bounds of the level
+	maxPoint := GridPoint{}
+
+	for _, room := range rooms {
+		if room.X < offset.X {
+			offset.X = room.X
+			log.Debugf("New min X room: id %d gridpoint %v", room.Id, room.GridPoint)
+		}
+		if room.Y < offset.Y {
+			offset.Y = room.Y
+		}
+		if room.X > maxPoint.X {
+			maxPoint.X = room.X
+		}
+		if room.Y > maxPoint.Y {
+			maxPoint.Y = room.Y
+		}
+	}
+
+	for _, tile := range hallways {
+		if tile.X < offset.X {
+			offset.X = tile.X
+		}
+		if tile.Y < offset.Y {
+			offset.Y = tile.Y
+		}
+		if tile.X > maxPoint.X {
+			maxPoint.X = tile.X
+		}
+		if tile.Y > maxPoint.Y {
+			maxPoint.Y = tile.Y
+		}
+	}
+
+	tiles := make([]Action, 0)
+
+	// Create the tiles for the map based on the rooms/hallways generated
+	for _, room := range rooms {
+		log.Debug(room)
+		for i := 0; i < room.Size; i++ {
+			for j := 0; j < room.Size; j++ {
+				x := room.X+i-offset.X
+				y := room.Y+j-offset.Y
+
+				newTile := &NewTileAction{
+					SpaceComponent: common.SpaceComponent{
+						Position: engo.Point{float32(x * TileWidth), float32(y * TileWidth)},
+						Width:    TileWidth,
+						Height:   TileWidth,
+					},
+					Sprite: 861 + rand.Intn(8),
+				}
+
+				tiles = append(tiles, newTile)
+			}
+		}
+	}
+
+	for _, tile := range hallways {
+		tile.X -= offset.X
+		tile.Y -= offset.Y
+
+		newTile := &NewTileAction{
+			SpaceComponent: common.SpaceComponent{
+				Position: tile.toPixels(),
+				Width:    TileWidth,
+				Height:   TileWidth,
+			},
+			Sprite: 861 + rand.Intn(8),
+		}
+
+		tiles = append(tiles, newTile)
+	}
+
+	return tiles
 }
