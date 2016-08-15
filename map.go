@@ -4,6 +4,7 @@ import (
 	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"math/rand"
 	"sort"
@@ -23,6 +24,75 @@ func (gp *GridPoint) toPixels() engo.Point {
 	return engo.Point{float32(gp.X * TileWidth), float32(gp.Y * TileWidth)}
 }
 
+type MapSystem struct {
+	Tiles      [][]*Tile
+	NeedsPrint bool
+	render     *common.RenderSystem
+}
+
+func (ms *MapSystem) New(w *ecs.World) {
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *common.RenderSystem:
+			ms.render = sys
+		}
+	}
+}
+
+func (ms *MapSystem) Update(dt float32) {
+	if ms.NeedsPrint {
+		ms.NeedsPrint = false
+		for i := 0; i < len(ms.Tiles[0]); i++ {
+			for j := 0; j < len(ms.Tiles); j++ {
+				occupied := 0
+				if ms.Tiles[j][i] != nil {
+					occupied = 1
+				}
+				fmt.Printf("%d ", occupied)
+			}
+			fmt.Println()
+		}
+	}
+}
+
+func (ms *MapSystem) Add(tile *Tile) {
+	if ms.Tiles[tile.X][tile.Y] == nil {
+		ms.Tiles[tile.X][tile.Y] = tile
+		ms.render.Add(&tile.BasicEntity, &tile.RenderComponent, &tile.SpaceComponent)
+		ms.NeedsPrint = true
+	}
+}
+
+func (ms *MapSystem) Remove(entity ecs.BasicEntity) {}
+
+func (ms *MapSystem) GetTileAt(point GridPoint) *Tile {
+	return ms.Tiles[point.X][point.Y]
+}
+
+// Initializes the map and sets camera settings based on the size
+type NewMapEvent struct {
+	Width, Height int
+}
+
+func (event *NewMapEvent) Process(w *ecs.World, dt float32) bool {
+	common.CameraBounds.Max = engo.Point{
+		X: float32(event.Width * TileWidth),
+		Y: float32(event.Height * TileWidth),
+	}
+
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *MapSystem:
+			sys.Tiles = make([][]*Tile, event.Width)
+			for i, _ := range sys.Tiles {
+				sys.Tiles[i] = make([]*Tile, event.Height)
+			}
+		}
+	}
+
+	return true
+}
+
 type Tile struct {
 	ecs.BasicEntity
 	NewTileEvent
@@ -31,6 +101,7 @@ type Tile struct {
 type NewTileEvent struct {
 	common.RenderComponent
 	common.SpaceComponent
+	GridPoint
 	Sprite int
 }
 
@@ -48,11 +119,12 @@ func (event *NewTileEvent) Process(w *ecs.World, dt float32) bool {
 		Drawable: sheet.Cell(event.Sprite),
 		Scale:    engo.Point{1, 1},
 	}
+	tile.GridPoint = event.GridPoint
 
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
-		case *common.RenderSystem:
-			sys.Add(&tile.BasicEntity, &tile.RenderComponent, &tile.SpaceComponent)
+		case *MapSystem:
+			sys.Add(&tile)
 		}
 	}
 
@@ -66,6 +138,13 @@ type RoomNode struct {
 	Size    int
 	visited bool
 	depth   int
+}
+
+func (room *RoomNode) Contains(point GridPoint) bool {
+	if room.X <= point.X && room.X+room.Size >= point.X && room.Y <= point.Y && room.Y+room.Size <= point.Y {
+		return true
+	}
+	return false
 }
 
 type RoomQueue []*RoomNode
@@ -286,11 +365,11 @@ func GenerateMap(seed int64) []Event {
 		if room.Y < offset.Y {
 			offset.Y = room.Y
 		}
-		if room.X > maxPoint.X {
-			maxPoint.X = room.X
+		if room.X+room.Size > maxPoint.X {
+			maxPoint.X = room.X + room.Size
 		}
-		if room.Y > maxPoint.Y {
-			maxPoint.Y = room.Y
+		if room.Y+room.Size > maxPoint.Y {
+			maxPoint.Y = room.Y + room.Size
 		}
 	}
 
@@ -312,21 +391,32 @@ func GenerateMap(seed int64) []Event {
 	events := make([]Event, 0)
 	log.Infof("Map bounds: %d wide, %d tall", maxPoint.X-offset.X, maxPoint.Y-offset.Y)
 
-	// Create the tiles for the map based on the rooms/hallways generated
+	// Initialize the map
+	events = append(events, &NewMapEvent{
+		Width:  maxPoint.X - offset.X,
+		Height: maxPoint.Y - offset.Y,
+	})
+
+	// Add tiles for the map based on the rooms generated
 	for _, room := range rooms {
+		room.X -= offset.X
+		room.Y -= offset.Y
 		log.Debug(room)
 		for i := 0; i < room.Size; i++ {
 			for j := 0; j < room.Size; j++ {
-				x := room.X + i - offset.X
-				y := room.Y + j - offset.Y
+				loc := GridPoint{
+					X: room.X + i,
+					Y: room.Y + j,
+				}
 
 				newTile := &NewTileEvent{
 					SpaceComponent: common.SpaceComponent{
-						Position: engo.Point{float32(x * TileWidth), float32(y * TileWidth)},
+						Position: engo.Point{float32(loc.X * TileWidth), float32(loc.Y * TileWidth)},
 						Width:    TileWidth,
 						Height:   TileWidth,
 					},
-					Sprite: 861 + rand.Intn(8),
+					GridPoint: loc,
+					Sprite:    861 + rand.Intn(8),
 				}
 
 				events = append(events, newTile)
@@ -334,6 +424,7 @@ func GenerateMap(seed int64) []Event {
 		}
 	}
 
+	// Next, do the hallways
 	for _, tile := range hallways {
 		tile.X -= offset.X
 		tile.Y -= offset.Y
@@ -344,7 +435,8 @@ func GenerateMap(seed int64) []Event {
 				Width:    TileWidth,
 				Height:   TileWidth,
 			},
-			Sprite: 861 + rand.Intn(8),
+			GridPoint: tile,
+			Sprite:    861 + rand.Intn(8),
 		}
 
 		events = append(events, newTile)

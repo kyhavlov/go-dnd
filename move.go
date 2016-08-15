@@ -2,8 +2,8 @@ package main
 
 import (
 	"engo.io/ecs"
-	"engo.io/engo/common"
 	"engo.io/engo"
+	"engo.io/engo/common"
 
 	log "github.com/Sirupsen/logrus"
 )

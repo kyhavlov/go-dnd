@@ -18,8 +18,8 @@ type DungeonScene struct {
 	serverRoom *ServerRoom
 
 	// Channels to send/receive network messages
-	incoming   chan NetworkMessage
-	outgoing   chan NetworkMessage
+	incoming chan NetworkMessage
+	outgoing chan NetworkMessage
 }
 
 // A unique identifier for the scene
@@ -42,8 +42,10 @@ func (*DungeonScene) Preload() {
 func (scene *DungeonScene) Setup(world *ecs.World) {
 	render := &common.RenderSystem{}
 
+	mapSystem := &MapSystem{}
 	input := &InputSystem{
-		outgoing: scene.outgoing,
+		mapSystem: mapSystem,
+		outgoing:  scene.outgoing,
 	}
 	event := &EventSystem{
 		world: world,
@@ -79,7 +81,6 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	}
 
 	world.AddSystem(render)
-	common.CameraBounds.Max = engo.Point{10000, 10000}
 
 	// Add our input systems (mouse/camera/camera scroll/input)
 	world.AddSystem(&common.MouseSystem{})
@@ -89,10 +90,11 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	world.AddSystem(&common.MouseZoomer{-0.125})
 	world.AddSystem(input)
 
-	// Add the game logic systems (event/move/network)
+	// Add the game logic systems (event/move/network/map)
 	world.AddSystem(event)
 	world.AddSystem(&MoveSystem{})
 	world.AddSystem(&NetworkSystem{})
+	world.AddSystem(mapSystem)
 
 	NewMouseCoordPanel(world)
 }
@@ -112,11 +114,12 @@ func main() {
 	}
 
 	// Register our different Event implementations with the gob package for serialization
-	// TODO: see if there's a way to do this automatically with reflection
+	// it's probably worth trying to keep the number of different events low for simplicity
 	gob.Register(&MoveEvent{})
 	gob.Register(&SetPlayerEvent{})
 	gob.Register(&NewPlayerEvent{})
 	gob.Register(&NewTileEvent{})
+	gob.Register(&NewMapEvent{})
 
 	scene := &DungeonScene{}
 
