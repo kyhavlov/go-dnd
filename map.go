@@ -24,6 +24,13 @@ func (gp *GridPoint) toPixels() engo.Point {
 	return engo.Point{float32(gp.X * TileWidth), float32(gp.Y * TileWidth)}
 }
 
+func PointToGridPoint(p engo.Point) GridPoint {
+	return GridPoint{
+		X: int(p.X / TileWidth),
+		Y: int(p.Y / TileWidth),
+	}
+}
+
 type MapSystem struct {
 	Tiles      [][]*Tile
 	NeedsPrint bool

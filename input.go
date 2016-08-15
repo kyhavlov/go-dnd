@@ -67,11 +67,22 @@ func (input *InputSystem) Update(dt float32) {
 
 		if input.mapSystem.GetTileAt(gridPoint) != nil {
 			move := &MoveEvent{input.player.NetworkID, newLocation}
-			SendMessage(input.outgoing, NetworkMessage{
-				Events: []Event{move},
-			})
 
-			log.Info("Sent move event to input.outgoing")
+			start := input.mapSystem.GetTileAt(PointToGridPoint(input.player.SpaceComponent.Position))
+			path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles)
+
+			log.Infof("Trying to move along path %v", path)
+
+			if len(path) < 9 {
+
+				SendMessage(input.outgoing, NetworkMessage{
+					Events: []Event{move},
+				})
+
+				log.Info("Sent move event to input.outgoing")
+			} else {
+				log.Info("Tried to move too far")
+			}
 		}
 	}
 }
