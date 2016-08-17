@@ -9,12 +9,16 @@ type EventSystem struct {
 	world *ecs.World
 
 	eventHistory []Event
+	activeEvents []Event
 
 	incoming   chan NetworkMessage
 	outgoing   chan NetworkMessage
 	serverRoom *ServerRoom
 }
 
+// Event is the interface for things which affect world state, such as
+// creature position, life, items, etc. It takes a time delta and returns
+// whether it has completed.
 type Event interface {
 	Process(*ecs.World, float32) bool
 }
@@ -23,6 +27,18 @@ type Event interface {
 func (ds *EventSystem) New(w *ecs.World) {}
 
 func (ds *EventSystem) Update(dt float32) {
+	// Process currently active events in order, in serial, stopping if one can't complete
+	for i := 0; i < len(ds.activeEvents); i++ {
+		event := ds.activeEvents[0]
+
+		if event.Process(ds.world, dt) {
+			ds.eventHistory = append(ds.eventHistory, event)
+			ds.activeEvents = ds.activeEvents[1:]
+		} else {
+			break
+		}
+	}
+
 	select {
 	case message, ok := <-ds.incoming:
 		if ok {
@@ -49,8 +65,7 @@ func (ds *EventSystem) Update(dt float32) {
 			}
 
 			for _, event := range message.Events {
-				event.Process(ds.world, dt)
-				ds.eventHistory = append(ds.eventHistory, event)
+				ds.activeEvents = append(ds.activeEvents, event)
 				if ds.serverRoom != nil {
 					ds.serverRoom.SendToAllClients(message)
 				}

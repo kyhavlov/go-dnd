@@ -2,7 +2,6 @@ package main
 
 import (
 	"engo.io/ecs"
-	"engo.io/engo"
 	"engo.io/engo/common"
 	log "github.com/Sirupsen/logrus"
 )
@@ -60,26 +59,18 @@ func (input *InputSystem) Update(dt float32) {
 			X: int(input.mouseTracker.MouseComponent.MouseX / TileWidth),
 			Y: int(input.mouseTracker.MouseComponent.MouseY / TileWidth),
 		}
-		newLocation := engo.Point{
-			float32(gridPoint.X * TileWidth),
-			float32(gridPoint.Y * TileWidth),
-		}
 
 		if input.mapSystem.GetTileAt(gridPoint) != nil {
-			move := &MoveEvent{input.player.NetworkID, newLocation}
-
 			start := input.mapSystem.GetTileAt(PointToGridPoint(input.player.SpaceComponent.Position))
 			path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles)
 
-			log.Infof("Trying to move along path %v", path)
-
-			if len(path) < 9 {
-
+			if len(path) < 17 {
 				SendMessage(input.outgoing, NetworkMessage{
-					Events: []Event{move},
+					Events: []Event{&MoveEvent{
+						Id:   input.player.NetworkID,
+						Path: path,
+					}},
 				})
-
-				log.Info("Sent move event to input.outgoing")
 			} else {
 				log.Info("Tried to move too far")
 			}

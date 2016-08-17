@@ -4,7 +4,7 @@ import (
 	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
-	"fmt"
+
 	log "github.com/Sirupsen/logrus"
 	"math/rand"
 	"sort"
@@ -46,21 +46,7 @@ func (ms *MapSystem) New(w *ecs.World) {
 	}
 }
 
-func (ms *MapSystem) Update(dt float32) {
-	if ms.NeedsPrint {
-		ms.NeedsPrint = false
-		for i := 0; i < len(ms.Tiles[0]); i++ {
-			for j := 0; j < len(ms.Tiles); j++ {
-				occupied := 0
-				if ms.Tiles[j][i] != nil {
-					occupied = 1
-				}
-				fmt.Printf("%d ", occupied)
-			}
-			fmt.Println()
-		}
-	}
-}
+func (ms *MapSystem) Update(dt float32) {}
 
 func (ms *MapSystem) Add(tile *Tile) {
 	if ms.Tiles[tile.X][tile.Y] == nil {
