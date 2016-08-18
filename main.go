@@ -62,7 +62,7 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	if scene.serverRoom != nil {
 		event.serverRoom = scene.serverRoom
 		SendMessage(input.outgoing, NetworkMessage{
-			Events: GenerateMap(34343221999),
+			Events: GenerateMap(3434323421999),
 		})
 
 		SendMessage(input.outgoing, NetworkMessage{
@@ -120,6 +120,7 @@ func main() {
 	gob.Register(&NewPlayerEvent{})
 	gob.Register(&NewTileEvent{})
 	gob.Register(&NewMapEvent{})
+	gob.Register(&NewCreatureEvent{})
 
 	scene := &DungeonScene{}
 

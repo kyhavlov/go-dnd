@@ -32,30 +32,16 @@ func PointToGridPoint(p engo.Point) GridPoint {
 }
 
 type MapSystem struct {
-	Tiles      [][]*Tile
-	NeedsPrint bool
-	render     *common.RenderSystem
+	Tiles [][]*Tile
 }
-
-func (ms *MapSystem) New(w *ecs.World) {
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *common.RenderSystem:
-			ms.render = sys
-		}
-	}
-}
-
-func (ms *MapSystem) Update(dt float32) {}
 
 func (ms *MapSystem) Add(tile *Tile) {
 	if ms.Tiles[tile.X][tile.Y] == nil {
 		ms.Tiles[tile.X][tile.Y] = tile
-		ms.render.Add(&tile.BasicEntity, &tile.RenderComponent, &tile.SpaceComponent)
-		ms.NeedsPrint = true
 	}
 }
 
+func (ms *MapSystem) Update(dt float32)             {}
 func (ms *MapSystem) Remove(entity ecs.BasicEntity) {}
 
 func (ms *MapSystem) GetTileAt(point GridPoint) *Tile {
@@ -88,12 +74,12 @@ func (event *NewMapEvent) Process(w *ecs.World, dt float32) bool {
 
 type Tile struct {
 	ecs.BasicEntity
+	common.RenderComponent
+	common.SpaceComponent
 	NewTileEvent
 }
 
 type NewTileEvent struct {
-	common.RenderComponent
-	common.SpaceComponent
 	GridPoint
 	Sprite int
 }
@@ -107,7 +93,11 @@ func (event *NewTileEvent) Process(w *ecs.World, dt float32) bool {
 
 	tile := Tile{}
 	tile.BasicEntity = ecs.NewBasic()
-	tile.SpaceComponent = event.SpaceComponent
+	tile.SpaceComponent = common.SpaceComponent{
+		Position: event.GridPoint.toPixels(),
+		Width:    TileWidth,
+		Height:   TileWidth,
+	}
 	tile.RenderComponent = common.RenderComponent{
 		Drawable: sheet.Cell(event.Sprite),
 		Scale:    engo.Point{1, 1},
@@ -116,6 +106,8 @@ func (event *NewTileEvent) Process(w *ecs.World, dt float32) bool {
 
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
+		case *common.RenderSystem:
+			sys.Add(&tile.BasicEntity, &tile.RenderComponent, &tile.SpaceComponent)
 		case *MapSystem:
 			sys.Add(&tile)
 		}
@@ -403,11 +395,6 @@ func GenerateMap(seed int64) []Event {
 				}
 
 				newTile := &NewTileEvent{
-					SpaceComponent: common.SpaceComponent{
-						Position: engo.Point{float32(loc.X * TileWidth), float32(loc.Y * TileWidth)},
-						Width:    TileWidth,
-						Height:   TileWidth,
-					},
 					GridPoint: loc,
 					Sprite:    861 + rand.Intn(8),
 				}
@@ -423,16 +410,26 @@ func GenerateMap(seed int64) []Event {
 		tile.Y -= offset.Y
 
 		newTile := &NewTileEvent{
-			SpaceComponent: common.SpaceComponent{
-				Position: tile.toPixels(),
-				Width:    TileWidth,
-				Height:   TileWidth,
-			},
 			GridPoint: tile,
 			Sprite:    861 + rand.Intn(8),
 		}
 
 		events = append(events, newTile)
+	}
+
+	// Spawn creatures in some of the rooms
+	for _, room := range rooms {
+		if random.Intn(2) == 0 && room != startingRoom {
+			count := 1 + random.Intn(3)
+			for i := 0; i < count; i++ {
+				events = append(events, &NewCreatureEvent{
+					GridPoint: GridPoint{
+						X: room.X + random.Intn(room.Size),
+						Y: room.Y + random.Intn(room.Size),
+					},
+				})
+			}
+		}
 	}
 
 	return events
