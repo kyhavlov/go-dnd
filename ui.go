@@ -8,19 +8,39 @@ import (
 	"engo.io/engo/common"
 )
 
+// UI Framework
 type UiPanel struct {
 	ecs.BasicEntity
 	bg         UiBackground
-	textfields []UiText
+	uiElements []UiElement
 	position   engo.Point
 	height     float32
 	width      float32
 }
 
+func (uipanel *UiPanel) UpdatePanel () {
+	for _, e := range uipanel.uiElements {
+		e.UpdateElement()
+	}
+}
+
+type UiElement interface {
+	UpdateElement()
+}
+
+type ElementUpdateFunc func(*UiElement)
+
 type UiText struct {
 	ecs.BasicEntity
 	common.RenderComponent
 	common.SpaceComponent
+	updateFunc ElementUpdateFunc
+}
+
+func (uitext UiText) UpdateElement() {
+	if uitext.updateFunc != nil {
+		uitext.updateFunc(&uitext)
+	}
 }
 
 type UiBackground struct {
@@ -29,7 +49,41 @@ type UiBackground struct {
 	common.SpaceComponent
 }
 
-func NewMouseCoordPanel(world *ecs.World) *UiPanel {
+// UI SYSTEM
+type UiSystem struct {
+	panels []UiPanel
+	inputSystem *InputSystem
+}
+
+//// Leaving this in for now since it might be a better way to initialize a system (used in render)
+//func (us *UiSystem) New(w *ecs.World) {
+//	w.AddSystem(&UiSystem{})
+//}
+
+func (us *UiSystem) Add(myPanel UiPanel) {
+	us.panels = append(us.panels, myPanel)
+}
+
+func (us *UiSystem) Remove(e ecs.BasicEntity) {
+	var del int = -1
+	for index, entity := range us.panels {
+		if entity.ID() == e.ID() {
+			del = index
+			break
+		}
+	}
+	if del >= 0 {
+		us.panels = append(us.panels[:del], us.panels[del+1:]...)
+	}
+}
+
+func (us *UiSystem) Update(dt float32) {
+	for _, p := range us.panels {
+		p.UpdatePanel()
+	}
+}
+
+func NewMouseCoordPanel(world *ecs.World, input *InputSystem) *UiPanel {
 
 	position := engo.Point{24, 24}
 	width := float32(264)
@@ -57,7 +111,7 @@ func NewMouseCoordPanel(world *ecs.World) *UiPanel {
 	panel := &UiPanel{
 		BasicEntity: ecs.NewBasic(),
 		bg:          bg,
-		textfields:  make([]UiText, 0),
+		uiElements:  make([]UiElement, 0),
 		position:    position,
 		height:      height,
 		width:       width,
@@ -76,7 +130,7 @@ func NewMouseCoordPanel(world *ecs.World) *UiPanel {
 		panic(err)
 	}
 
-	xCoord := UiText{BasicEntity: ecs.NewBasic()}
+	xCoord := &UiText{BasicEntity: ecs.NewBasic()}
 	xCoord.RenderComponent.Drawable = common.Text{
 		Font: fnt,
 		Text: "Mouse X position is : ",
@@ -84,9 +138,20 @@ func NewMouseCoordPanel(world *ecs.World) *UiPanel {
 	xCoord.SetShader(common.HUDShader)
 	xCoord.SpaceComponent.Position.Set(position.X, position.Y+12)
 	xCoord.RenderComponent.SetZIndex(2)
-	panel.textfields = append(panel.textfields, xCoord)
 
-	yCoord := UiText{BasicEntity: ecs.NewBasic()}
+	// The updateFunc determines how xCoord is updated
+	xCoord.updateFunc = func(){
+		// Get the mousetracker
+		x := input.mouseTracker.MouseX
+		y := input.mouseTracker.MouseY
+
+		xCoord.RenderComponent.Drawable.Text
+
+	}
+
+	panel.uiElements = append(panel.uiElements, xCoord)
+
+	yCoord := &UiText{BasicEntity: ecs.NewBasic()}
 	yCoord.RenderComponent.Drawable = common.Text{
 		Font: fnt,
 		Text: "Mouse Y position is : ",
@@ -94,7 +159,7 @@ func NewMouseCoordPanel(world *ecs.World) *UiPanel {
 	yCoord.SetShader(common.HUDShader)
 	yCoord.SpaceComponent.Position.Set(position.X, position.Y+36)
 	yCoord.RenderComponent.SetZIndex(2)
-	panel.textfields = append(panel.textfields, yCoord)
+	panel.uiElements = append(panel.uiElements, yCoord)
 
 	for _, system := range world.Systems() {
 		switch sys := system.(type) {

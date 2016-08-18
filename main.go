@@ -47,6 +47,12 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 		mapSystem: mapSystem,
 		outgoing:  scene.outgoing,
 	}
+
+	ui     := &UiSystem{
+		panels: make([]UiElement, 0),
+		inputSystem: input,
+	}
+
 	event := &EventSystem{
 		world: world,
 
@@ -95,6 +101,7 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	world.AddSystem(&MoveSystem{})
 	world.AddSystem(&NetworkSystem{})
 	world.AddSystem(mapSystem)
+	world.AddSystem(ui)
 
 	NewMouseCoordPanel(world)
 }
