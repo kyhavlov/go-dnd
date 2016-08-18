@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image/color"
 
 	"engo.io/ecs"
@@ -21,6 +22,7 @@ type UiText struct {
 	ecs.BasicEntity
 	common.RenderComponent
 	common.SpaceComponent
+	DynamicTextComponent
 }
 
 type UiBackground struct {
@@ -29,7 +31,47 @@ type UiBackground struct {
 	common.SpaceComponent
 }
 
-func NewMouseCoordPanel(world *ecs.World) *UiPanel {
+type UiSystem struct {
+	uiTexts map[*ecs.BasicEntity]*UiText
+	input *InputSystem
+}
+
+type DynamicTextComponent struct {
+	updateFunc func() string
+	lastValue string
+}
+
+func (us *UiSystem) Update(dt float32) {
+	for _, text := range us.uiTexts {
+		if text.updateFunc != nil {
+			newValue := text.updateFunc()
+			if newValue != text.lastValue {
+				text.Drawable = common.Text{
+					Font: text.Drawable.(common.Text).Font,
+					Text: newValue,
+				}
+			}
+			text.lastValue = newValue
+		}
+	}
+}
+
+func (us *UiSystem) Add(e *ecs.BasicEntity, text *UiText) {
+	us.uiTexts[e] = text
+}
+
+func (us *UiSystem) Remove(entity ecs.BasicEntity) {
+	delete(us.uiTexts, &entity)
+}
+
+// New is the initialisation of the System
+func (us *UiSystem) New(w *ecs.World) {
+	us.uiTexts = make(map[*ecs.BasicEntity]*UiText)
+
+	NewMouseCoordPanel(us, w)
+}
+
+func NewMouseCoordPanel(uiSystem *UiSystem, world *ecs.World) {
 
 	position := engo.Point{24, 24}
 	width := float32(264)
@@ -54,15 +96,6 @@ func NewMouseCoordPanel(world *ecs.World) *UiPanel {
 		}
 	}
 
-	panel := &UiPanel{
-		BasicEntity: ecs.NewBasic(),
-		bg:          bg,
-		textfields:  make([]UiText, 0),
-		position:    position,
-		height:      height,
-		width:       width,
-	}
-
 	// Add text fields
 
 	// Set font
@@ -79,22 +112,29 @@ func NewMouseCoordPanel(world *ecs.World) *UiPanel {
 	xCoord := UiText{BasicEntity: ecs.NewBasic()}
 	xCoord.RenderComponent.Drawable = common.Text{
 		Font: fnt,
-		Text: "Mouse X position is : ",
 	}
 	xCoord.SetShader(common.HUDShader)
 	xCoord.SpaceComponent.Position.Set(position.X, position.Y+12)
 	xCoord.RenderComponent.SetZIndex(2)
-	panel.textfields = append(panel.textfields, xCoord)
+
+	xCoord.DynamicTextComponent = DynamicTextComponent{
+		updateFunc: func() string {
+			return fmt.Sprintf("Mouse X position is : %d", int(uiSystem.input.mouseTracker.MouseX))
+		},
+	}
 
 	yCoord := UiText{BasicEntity: ecs.NewBasic()}
 	yCoord.RenderComponent.Drawable = common.Text{
 		Font: fnt,
-		Text: "Mouse Y position is : ",
 	}
 	yCoord.SetShader(common.HUDShader)
 	yCoord.SpaceComponent.Position.Set(position.X, position.Y+36)
 	yCoord.RenderComponent.SetZIndex(2)
-	panel.textfields = append(panel.textfields, yCoord)
+	yCoord.DynamicTextComponent = DynamicTextComponent{
+		updateFunc: func() string {
+			return fmt.Sprintf("Mouse Y position is : %d", int(uiSystem.input.mouseTracker.MouseY))
+		},
+	}
 
 	for _, system := range world.Systems() {
 		switch sys := system.(type) {
@@ -104,5 +144,6 @@ func NewMouseCoordPanel(world *ecs.World) *UiPanel {
 		}
 	}
 
-	return panel
+	uiSystem.Add(&xCoord.BasicEntity, &xCoord)
+	uiSystem.Add(&yCoord.BasicEntity, &yCoord)
 }

@@ -47,6 +47,11 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 		mapSystem: mapSystem,
 		outgoing:  scene.outgoing,
 	}
+
+	ui := &UiSystem{
+		input: input,
+	}
+
 	event := &EventSystem{
 		world: world,
 
@@ -89,14 +94,13 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	world.AddSystem(common.NewKeyboardScroller(400, engo.DefaultHorizontalAxis, engo.DefaultVerticalAxis))
 	world.AddSystem(&common.MouseZoomer{-0.125})
 	world.AddSystem(input)
+	world.AddSystem(ui)
 
 	// Add the game logic systems (event/move/network/map)
 	world.AddSystem(event)
 	world.AddSystem(&MoveSystem{})
 	world.AddSystem(&NetworkSystem{})
 	world.AddSystem(mapSystem)
-
-	NewMouseCoordPanel(world)
 }
 
 func main() {
