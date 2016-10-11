@@ -16,7 +16,7 @@ type InputSystem struct {
 	mouseTracker MouseTracker
 	mapSystem    *MapSystem
 
-	player *Player
+	player *Creature
 	PlayerID
 
 	outgoing chan NetworkMessage

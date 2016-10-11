@@ -7,23 +7,17 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-type Player struct {
-	NetworkID
-	ecs.BasicEntity
-	common.RenderComponent
-	common.SpaceComponent
-}
-
 // Spawns a player with the given ID at the given GridPoint
 type NewPlayerEvent struct {
 	PlayerID
+	Life int
 	GridPoint
 }
 
 func (event *NewPlayerEvent) Process(w *ecs.World, dt float32) bool {
 	sheet := common.NewSpritesheetFromFile(SpritesheetPath, TileWidth, TileWidth)
 
-	player := Player{
+	player := Creature{
 		BasicEntity: ecs.NewBasic(),
 	}
 	player.SpaceComponent = common.SpaceComponent{

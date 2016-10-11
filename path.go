@@ -95,6 +95,7 @@ func getEstimatedDistance(a, b *Tile) int {
 	return imath.Abs(a.X-b.X) + imath.Abs(a.Y-b.Y)
 }
 
+// TODO: re-use the neighbors slice instead of allocating a new one every time we call this
 func getNeighbors(tile *Tile, tiles [][]*Tile) []*Tile {
 	neighbors := make([]*Tile, 0)
 

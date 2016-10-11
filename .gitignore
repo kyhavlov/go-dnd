@@ -1,3 +1,6 @@
 *.exe
+*.exe~
 *.so
 .idea/
+assets/
+.DS_STORE
