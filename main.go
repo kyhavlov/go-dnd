@@ -123,7 +123,7 @@ func main() {
 	gob.Register(&SetPlayerEvent{})
 	gob.Register(&NewPlayerEvent{})
 	gob.Register(&NewTileEvent{})
-	gob.Register(&NewMapEvent{})
+	gob.Register(&InitMapEvent{})
 	gob.Register(&NewCreatureEvent{})
 
 	scene := &DungeonScene{}

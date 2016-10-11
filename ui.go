@@ -33,12 +33,12 @@ type UiBackground struct {
 
 type UiSystem struct {
 	uiTexts map[*ecs.BasicEntity]*UiText
-	input *InputSystem
+	input   *InputSystem
 }
 
 type DynamicTextComponent struct {
 	updateFunc func() string
-	lastValue string
+	lastValue  string
 }
 
 func (us *UiSystem) Update(dt float32) {
