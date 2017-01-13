@@ -59,30 +59,7 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 
 		incoming: scene.incoming,
 		outgoing: scene.outgoing,
-	}
-
-	// Generate the map and add our player if we're the server, otherwise just ask the server to
-	// make a player for us. In the future the player entities should probably get created in a loop
-	// at world creation because it'll be launched from a lobby and we'll have the info to do that.
-	if scene.serverRoom != nil {
-		event.serverRoom = scene.serverRoom
-		SendMessage(input.outgoing, NetworkMessage{
-			Events: GenerateMap(3434323421999),
-		})
-
-		SendMessage(input.outgoing, NetworkMessage{
-			Events: []Event{&NewPlayerEvent{
-				GridPoint: GridPoint{
-					X: 6,
-					Y: 4,
-				},
-			}},
-		})
-		log.Info("created map")
-	} else {
-		SendMessage(input.outgoing, NetworkMessage{
-			NewPlayer: true,
-		})
+		serverRoom: scene.serverRoom,
 	}
 
 	world.AddSystem(render)
@@ -104,6 +81,15 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	world.AddSystem(&LightSystem{})
 }
 
+type GameStartEvent struct {
+	RandomSeed int64
+}
+func (gs GameStartEvent) Process(w *ecs.World, dt float32) bool {
+	log.Infof("Got random seed from server: %d", gs.RandomSeed)
+	GenerateMap(w, gs.RandomSeed)
+	return true
+}
+
 func main() {
 	// Set up logging
 	formatter := new(prefixed.TextFormatter)
@@ -120,12 +106,10 @@ func main() {
 
 	// Register our different Event implementations with the gob package for serialization
 	// it's probably worth trying to keep the number of different events low for simplicity
-	gob.Register(&MoveEvent{})
+	gob.Register(&GameStartEvent{})
 	gob.Register(&SetPlayerEvent{})
 	gob.Register(&NewPlayerEvent{})
-	gob.Register(&NewTileEvent{})
-	gob.Register(&InitMapEvent{})
-	gob.Register(&NewCreatureEvent{})
+	gob.Register(&MoveEvent{})
 
 	scene := &DungeonScene{}
 
@@ -146,6 +130,8 @@ func main() {
 			log.Info("Connected to server at ", conn.RemoteAddr())
 		}
 		client := NewClient(conn)
+		gameStart := <-client.incoming
+		client.incoming <- gameStart
 		scene.incoming = client.incoming
 		scene.outgoing = client.outgoing
 	}

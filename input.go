@@ -65,12 +65,12 @@ func (input *InputSystem) Update(dt float32) {
 			path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles)
 
 			if len(path) < 17 {
-				SendMessage(input.outgoing, NetworkMessage{
+				input.outgoing <- NetworkMessage{
 					Events: []Event{&MoveEvent{
 						Id:   input.player.NetworkID,
 						Path: path,
 					}},
-				})
+				}
 			} else {
 				log.Info("Tried to move too far")
 			}

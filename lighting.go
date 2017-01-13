@@ -5,7 +5,7 @@ import (
 	"image/color"
 
 	"github.com/engoengine/math/imath"
-	log "github.com/Sirupsen/logrus"
+	//log "github.com/Sirupsen/logrus"
 	"engo.io/engo/common"
 )
 
@@ -78,7 +78,7 @@ func (ls *LightSystem) Update(dt float32) {
 		// with the light strength fading with distance from the source.
 		for _, light := range ls.lights {
 			radius := int((light.GetBrightness() - MIN_BRIGHTNESS) / LIGHT_DECREASE) + 1
-			log.Infof("radius: %d", radius)
+			//log.Infof("radius: %d", radius)
 			for i := 0; i <= radius*2; i++ {
 				current := light.GetLocation()
 				current.X -= radius
@@ -100,7 +100,7 @@ func (ls *LightSystem) Update(dt float32) {
 			}
 		}
 
-		log.Info("lighting updated")
+		//log.Info("lighting updated")
 
 		ls.needsUpdate = false
 	}

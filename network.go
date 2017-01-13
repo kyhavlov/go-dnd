@@ -18,13 +18,6 @@ type NetworkMessage struct {
 	Events []Event
 }
 
-// helper function to send a NetworkMessage asynchronously
-func SendMessage(channel chan NetworkMessage, message NetworkMessage) {
-	go func() {
-		channel <- message
-	}()
-}
-
 type NetworkSystem struct {
 	networkIdCounter NetworkID
 	myPlayerId       int
@@ -75,8 +68,8 @@ func NewClient(connection net.Conn) *Client {
 	reader := gob.NewDecoder(connection)
 
 	client := &Client{
-		incoming: make(chan NetworkMessage),
-		outgoing: make(chan NetworkMessage),
+		incoming: make(chan NetworkMessage, 256),
+		outgoing: make(chan NetworkMessage, 256),
 		reader:   reader,
 		writer:   writer,
 	}
@@ -93,11 +86,6 @@ type ServerRoom struct {
 	incoming chan NetworkMessage
 }
 
-func (room *ServerRoom) NextId() PlayerID {
-	room.idInc += 1
-	return room.idInc
-}
-
 func (room *ServerRoom) SendToClient(pid PlayerID, message NetworkMessage) {
 	room.clients[pid].outgoing <- message
 }
@@ -110,7 +98,8 @@ func (room *ServerRoom) SendToAllClients(message NetworkMessage) {
 
 func (room *ServerRoom) Join(connection net.Conn) {
 	client := NewClient(connection)
-	id := room.NextId()
+	room.idInc += 1
+	id := room.idInc
 	room.clients[id] = client
 	go func() {
 		for {
@@ -122,35 +111,46 @@ func (room *ServerRoom) Join(connection net.Conn) {
 	}()
 }
 
-func (room *ServerRoom) Listen() {
-	go func() {
-		for {
-			conn := <-room.joins
-			log.Info("[server] new client connected from ", conn.RemoteAddr())
-			room.Join(conn)
-		}
-	}()
-}
-
 func newServerRoom() *ServerRoom {
 	room := &ServerRoom{
 		clients:  make(map[PlayerID]*Client),
-		joins:    make(chan net.Conn),
-		incoming: make(chan NetworkMessage),
+		joins:    make(chan net.Conn, 0),
+		incoming: make(chan NetworkMessage, 256),
 	}
-
-	room.Listen()
 
 	return room
 }
 
-func runServer(listener net.Listener, room *ServerRoom) {
-	for {
+func runServer(listener net.Listener, room *ServerRoom, players int) {
+	for i := 0; i < players; i++ {
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Errorf("[server] Error accepting connection: %s", err)
 		}
-		room.joins <- conn
+		log.Info("[server] new client connected from ", conn.RemoteAddr())
+		room.Join(conn)
+	}
+
+	// Send the game start event and create players/assign player IDs
+	events := []Event{GameStartEvent{
+		RandomSeed: 3434323421999,
+	}}
+	for i := 0; i < players+1; i++ {
+		events = append(events, &NewPlayerEvent{
+			PlayerID: PlayerID(i),
+			GridPoint: GridPoint{
+				X: 6+i,
+				Y: 4,
+			},
+		})
+	}
+	room.incoming <- NetworkMessage{
+		Events: events,
+	}
+	for i := 1; i <= players; i++ {
+		room.SendToClient(PlayerID(i), NetworkMessage{
+			Events: []Event{&SetPlayerEvent{PlayerID(i)}},
+		})
 	}
 }
 
@@ -164,7 +164,7 @@ func StartServer(address string) *ServerRoom {
 		log.Infof("Hosting server at %v", listener.Addr())
 	}
 
-	go runServer(listener, room)
+	runServer(listener, room, 1)
 
 	return room
 }

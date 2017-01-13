@@ -56,7 +56,7 @@ func (event *NewPlayerEvent) Process(w *ecs.World, dt float32) bool {
 		}
 	}
 
-	log.Info("New player added at ", event.GridPoint)
+	log.Infof("New player added at %v, ID: %d", event.GridPoint, event.PlayerID)
 
 	return true
 }

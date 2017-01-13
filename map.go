@@ -39,7 +39,8 @@ type Tile struct {
 	ecs.BasicEntity
 	common.RenderComponent
 	common.SpaceComponent
-	NewTileEvent
+	GridPoint
+	Sprite int
 }
 
 // The map system tracks the tiles and light levels of the map
@@ -68,37 +69,7 @@ func (ms *MapSystem) MapHeight() int {
 	return len(ms.Tiles[0])
 }
 
-// Initializes the map and sets camera settings based on the size
-type InitMapEvent struct {
-	Width, Height int
-}
-
-func (event *InitMapEvent) Process(w *ecs.World, dt float32) bool {
-	common.CameraBounds.Max = engo.Point{
-		X: float32(event.Width * TileWidth),
-		Y: float32(event.Height * TileWidth),
-	}
-
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *MapSystem:
-			sys.Tiles = make([][]*Tile, event.Width)
-			for i, _ := range sys.Tiles {
-				sys.Tiles[i] = make([]*Tile, event.Height)
-			}
-		}
-	}
-
-	return true
-}
-
-// Adds a new tile to the map
-type NewTileEvent struct {
-	GridPoint
-	Sprite int
-}
-
-func (event *NewTileEvent) Process(w *ecs.World, dt float32) bool {
+func AddNewTile(w *ecs.World, coords GridPoint, sprite int) bool {
 	sheet := common.NewSpritesheetFromFile(SpritesheetPath, TileWidth, TileWidth)
 
 	if sheet == nil {
@@ -108,22 +79,22 @@ func (event *NewTileEvent) Process(w *ecs.World, dt float32) bool {
 	tile := Tile{}
 	tile.BasicEntity = ecs.NewBasic()
 	tile.SpaceComponent = common.SpaceComponent{
-		Position: event.GridPoint.toPixels(),
+		Position: coords.toPixels(),
 		Width:    TileWidth,
 		Height:   TileWidth,
 	}
 	tile.RenderComponent = common.RenderComponent{
-		Drawable: sheet.Cell(event.Sprite),
+		Drawable: sheet.Cell(sprite),
 		Color:    color.Alpha{MIN_BRIGHTNESS},
 		Scale:    engo.Point{1, 1},
 	}
-	tile.GridPoint = event.GridPoint
+	tile.GridPoint = coords
 
 	added := false
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *MapSystem:
-			if sys.GetTileAt(tile.GridPoint) == nil {
+			if sys.GetTileAt(coords) == nil {
 				sys.Add(&tile)
 				added = true
 			}

@@ -3,6 +3,7 @@ package main
 import (
 	"engo.io/ecs"
 	log "github.com/Sirupsen/logrus"
+	"reflect"
 )
 
 type EventSystem struct {
@@ -24,51 +25,32 @@ type Event interface {
 }
 
 // New is the initialisation of the System
-func (ds *EventSystem) New(w *ecs.World) {}
+func (es *EventSystem) New(w *ecs.World) {}
 
-func (ds *EventSystem) Update(dt float32) {
+func (es *EventSystem) Update(dt float32) {
 	// Process currently active events in order, in serial, stopping if one can't complete
-	for i := 0; i < len(ds.activeEvents); i++ {
-		event := ds.activeEvents[0]
+	for i := 0; i < len(es.activeEvents); i++ {
+		event := es.activeEvents[0]
 
-		if event.Process(ds.world, dt) {
-			ds.eventHistory = append(ds.eventHistory, event)
-			ds.activeEvents = ds.activeEvents[1:]
+		if event.Process(es.world, dt) {
+			es.eventHistory = append(es.eventHistory, event)
+			es.activeEvents = es.activeEvents[1:]
 		} else {
 			break
 		}
 	}
 
 	select {
-	case message, ok := <-ds.incoming:
+	case message, ok := <-es.incoming:
 		if ok {
-			if message.NewPlayer && ds.serverRoom != nil {
-				log.Info("sending event history to new player ", message.Sender)
-				history := NetworkMessage{
-					Events: ds.eventHistory,
-				}
-				setID := &SetPlayerEvent{message.Sender}
-				newPlayer := &NewPlayerEvent{
-					PlayerID: message.Sender,
-					GridPoint: GridPoint{
-						X: 6,
-						Y: 4,
-					},
-				}
-				history.Events = append(history.Events, setID)
-
-				newPlayer.Process(ds.world, dt)
-				ds.serverRoom.SendToClient(message.Sender, history)
-				ds.serverRoom.SendToAllClients(NetworkMessage{
-					Events: []Event{newPlayer},
-				})
-			}
-
 			for _, event := range message.Events {
-				ds.activeEvents = append(ds.activeEvents, event)
-				if ds.serverRoom != nil {
-					ds.serverRoom.SendToAllClients(message)
+				es.activeEvents = append(es.activeEvents, event)
+				if es.serverRoom != nil {
+					log.Infof("Sending event to all clients: %v", reflect.TypeOf(event))
 				}
+			}
+			if es.serverRoom != nil {
+				es.serverRoom.SendToAllClients(message)
 			}
 		} else {
 			log.Fatal("channel closed")
@@ -77,4 +59,4 @@ func (ds *EventSystem) Update(dt float32) {
 	}
 }
 
-func (ds *EventSystem) Remove(entity ecs.BasicEntity) {}
+func (es *EventSystem) Remove(entity ecs.BasicEntity) {}

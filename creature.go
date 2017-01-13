@@ -17,12 +17,7 @@ type Creature struct {
 	LightSource
 }
 
-type NewCreatureEvent struct {
-	Life int
-	GridPoint
-}
-
-func (event *NewCreatureEvent) Process(w *ecs.World, dt float32) bool {
+func AddNewCreature(w *ecs.World, coords GridPoint, life int) {
 	sheet := common.NewSpritesheetFromFile(SpritesheetPath, TileWidth, TileWidth)
 
 	if sheet == nil {
@@ -32,7 +27,7 @@ func (event *NewCreatureEvent) Process(w *ecs.World, dt float32) bool {
 	creature := Creature{}
 	creature.BasicEntity = ecs.NewBasic()
 	creature.SpaceComponent = common.SpaceComponent{
-		Position: event.toPixels(),
+		Position: coords.toPixels(),
 		Width:    TileWidth,
 		Height:   TileWidth,
 	}
@@ -41,7 +36,7 @@ func (event *NewCreatureEvent) Process(w *ecs.World, dt float32) bool {
 		Scale:    engo.Point{1, 1},
 	}
 	creature.HealthComponent = HealthComponent{
-		Life: event.Life,
+		Life: life,
 	}
 
 	for _, system := range w.Systems() {
@@ -61,6 +56,4 @@ func (event *NewCreatureEvent) Process(w *ecs.World, dt float32) bool {
 			sys.Add(&creature.BasicEntity, &creature.HealthComponent)
 		}
 	}
-
-	return true
 }

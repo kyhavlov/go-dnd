@@ -5,6 +5,9 @@ import (
 	"sort"
 
 	log "github.com/Sirupsen/logrus"
+	"engo.io/ecs"
+	"engo.io/engo/common"
+	"engo.io/engo"
 )
 
 type RoomNode struct {
@@ -139,7 +142,7 @@ func roomIsValid(room *RoomNode, rooms []*RoomNode) bool {
 }
 
 // Generates a map from a seed number
-func GenerateMap(seed int64) []Event {
+func GenerateMap(w *ecs.World, seed int64) []Event {
 	random := rand.New(rand.NewSource(seed))
 	rooms := make(Rooms, 0)
 	hallways := make([]GridPoint, 0)
@@ -268,10 +271,22 @@ func GenerateMap(seed int64) []Event {
 	log.Infof("Map bounds: %d wide, %d tall", maxPoint.X-offset.X, maxPoint.Y-offset.Y)
 
 	// Initialize the map
-	events = append(events, &InitMapEvent{
-		Width:  maxPoint.X - offset.X,
-		Height: maxPoint.Y - offset.Y,
-	})
+	MapWidth :=  maxPoint.X - offset.X
+	MapHeight := maxPoint.Y - offset.Y
+	common.CameraBounds.Max = engo.Point{
+		X: float32(MapWidth * TileWidth),
+		Y: float32(MapHeight * TileWidth),
+	}
+
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *MapSystem:
+			sys.Tiles = make([][]*Tile, MapWidth)
+			for i, _ := range sys.Tiles {
+				sys.Tiles[i] = make([]*Tile, MapHeight)
+			}
+		}
+	}
 
 	// Add tiles for the map based on the rooms generated
 	for _, room := range rooms {
@@ -285,12 +300,7 @@ func GenerateMap(seed int64) []Event {
 					Y: room.Y + j,
 				}
 
-				newTile := &NewTileEvent{
-					GridPoint: loc,
-					Sprite:    861 + rand.Intn(8),
-				}
-
-				events = append(events, newTile)
+				AddNewTile(w, loc, 861 + rand.Intn(8))
 			}
 		}
 	}
@@ -300,12 +310,7 @@ func GenerateMap(seed int64) []Event {
 		tile.X -= offset.X
 		tile.Y -= offset.Y
 
-		newTile := &NewTileEvent{
-			GridPoint: tile,
-			Sprite:    861 + rand.Intn(8),
-		}
-
-		events = append(events, newTile)
+		AddNewTile(w, tile, 861 + rand.Intn(8))
 	}
 
 	// Spawn creatures in some of the rooms
@@ -313,12 +318,11 @@ func GenerateMap(seed int64) []Event {
 		if random.Intn(2) == 0 && room != startingRoom {
 			count := 1 + random.Intn(3)
 			for i := 0; i < count; i++ {
-				events = append(events, &NewCreatureEvent{
-					GridPoint: GridPoint{
-						X: room.X + random.Intn(room.Size),
-						Y: room.Y + random.Intn(room.Size),
-					},
-				})
+				coords := GridPoint{
+					X: room.X + random.Intn(room.Size),
+					Y: room.Y + random.Intn(room.Size),
+				}
+				AddNewCreature(w, coords, 0)
 			}
 		}
 	}
