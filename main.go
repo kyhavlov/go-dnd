@@ -101,6 +101,7 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	world.AddSystem(&MoveSystem{})
 	world.AddSystem(&NetworkSystem{})
 	world.AddSystem(mapSystem)
+	world.AddSystem(&LightSystem{})
 }
 
 func main() {

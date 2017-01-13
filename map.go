@@ -4,10 +4,10 @@ import (
 	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
+	"image/color"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/engoengine/math/imath"
-	"image/color"
 )
 
 const SpritesheetPath = "textures/dungeon2x.png"
@@ -22,6 +22,10 @@ type GridPoint struct {
 
 func (gp *GridPoint) toPixels() engo.Point {
 	return engo.Point{float32(gp.X * TileWidth), float32(gp.Y * TileWidth)}
+}
+
+func (gp *GridPoint) distanceTo(other GridPoint) int {
+	return imath.Abs(gp.X-other.X) + imath.Abs(gp.Y-other.Y)
 }
 
 func PointToGridPoint(p engo.Point) GridPoint {
@@ -54,6 +58,14 @@ func (ms *MapSystem) Remove(entity ecs.BasicEntity) {}
 
 func (ms *MapSystem) GetTileAt(point GridPoint) *Tile {
 	return ms.Tiles[point.X][point.Y]
+}
+
+func (ms *MapSystem) MapWidth() int {
+	return len(ms.Tiles)
+}
+
+func (ms *MapSystem) MapHeight() int {
+	return len(ms.Tiles[0])
 }
 
 // Initializes the map and sets camera settings based on the size
@@ -102,7 +114,7 @@ func (event *NewTileEvent) Process(w *ecs.World, dt float32) bool {
 	}
 	tile.RenderComponent = common.RenderComponent{
 		Drawable: sheet.Cell(event.Sprite),
-		Color:    color.Alpha{250 - uint8(imath.Min((imath.Abs(event.X-6)+imath.Abs(event.Y-4))*20, 150))},
+		Color:    color.Alpha{MIN_BRIGHTNESS},
 		Scale:    engo.Point{1, 1},
 	}
 	tile.GridPoint = event.GridPoint
@@ -115,6 +127,8 @@ func (event *NewTileEvent) Process(w *ecs.World, dt float32) bool {
 				sys.Add(&tile)
 				added = true
 			}
+		case *LightSystem:
+			sys.needsUpdate = true
 		}
 	}
 

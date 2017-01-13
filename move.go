@@ -20,9 +20,9 @@ func (ms *MoveSystem) New(w *ecs.World) {
 
 func (ms *MoveSystem) Update(dt float32) {}
 
-func (ds *MoveSystem) Add(entity *ecs.BasicEntity, space *common.SpaceComponent, nid NetworkID) {
-	ds.SpaceComponents[nid] = space
-	ds.networkIds[entity] = nid
+func (ms *MoveSystem) Add(entity *ecs.BasicEntity, space *common.SpaceComponent, nid NetworkID) {
+	ms.SpaceComponents[nid] = space
+	ms.networkIds[entity] = nid
 }
 
 func (ms *MoveSystem) Remove(entity ecs.BasicEntity) {
@@ -42,14 +42,22 @@ type MoveEvent struct {
 
 // Pixels per frame to move entities
 const speed = 3
-
 func (move *MoveEvent) Process(w *ecs.World, dt float32) bool {
+	var lights *LightSystem
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *LightSystem:
+			lights = sys
+		}
+	}
+
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *MoveSystem:
 			current := &sys.SpaceComponents[move.Id].Position
 			target := move.Path[move.current].toPixels()
 			if current.PointDistance(target) <= 3.0 {
+				lights.needsUpdate = true
 				current.X = target.X
 				current.Y = target.Y
 				move.current++

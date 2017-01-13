@@ -48,6 +48,11 @@ func (event *NewPlayerEvent) Process(w *ecs.World, dt float32) bool {
 			if sys.PlayerID == event.PlayerID {
 				sys.player = &player
 			}
+		case *LightSystem:
+			sys.Add(&player.BasicEntity, &DynamicLightSource{
+				spaceComponent: &player.SpaceComponent,
+				Brightness: 250,
+			})
 		}
 	}
 

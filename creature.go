@@ -14,6 +14,7 @@ type Creature struct {
 	HealthComponent
 	common.SpaceComponent
 	common.RenderComponent
+	LightSource
 }
 
 type NewCreatureEvent struct {

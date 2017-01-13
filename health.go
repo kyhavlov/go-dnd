@@ -1,6 +1,8 @@
 package main
 
-import "engo.io/ecs"
+import (
+	"engo.io/ecs"
+)
 
 type HealthSystem struct {
 	healths map[*ecs.BasicEntity]*HealthComponent
