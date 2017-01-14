@@ -31,7 +31,7 @@ func (*DungeonScene) Preload() {
 	engo.Files.Load(SpritesheetPath)
 
 	// Load a font
-	err := engo.Files.Load("fonts/Roboto-Regular.ttf")
+	err := engo.Files.Load("fonts/Gamegirl.ttf")
 	if err != nil {
 		panic(err)
 	}
@@ -83,12 +83,23 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 }
 
 type GameStartEvent struct {
-	RandomSeed int64
+	RandomSeed  int64
+	PlayerCount int
 }
 
 func (gs GameStartEvent) Process(w *ecs.World, dt float32) bool {
 	log.Infof("Got random seed from server: %d", gs.RandomSeed)
 	GenerateMap(w, gs.RandomSeed)
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *UiSystem:
+			sys.InitUI(w, gs.PlayerCount)
+		case *TurnSystem:
+			for i := 0; i < gs.PlayerCount; i++ {
+				sys.PlayerReady[PlayerID(i)] = false
+			}
+		}
+	}
 	return true
 }
 

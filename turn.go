@@ -10,7 +10,11 @@ type TurnSystem struct {
 	PlayerReady   map[PlayerID]bool
 	PlayersTurn   bool
 
-	eventSystem  *EventSystem
+	eventSystem *EventSystem
+}
+
+func (ts *TurnSystem) IsPlayerReady(id PlayerID) bool {
+	return ts.PlayerReady[id]
 }
 
 func (ts *TurnSystem) New(w *ecs.World) {
@@ -33,6 +37,11 @@ func (ts *TurnSystem) Update(dt float32) {
 
 		for _, ready := range ts.PlayerReady {
 			if !ready {
+				allReady = false
+			}
+		}
+		for _, action := range ts.PlayerActions {
+			if action == nil {
 				allReady = false
 			}
 		}
@@ -92,6 +101,7 @@ func (p *PlayerReady) Process(w *ecs.World, dt float32) bool {
 type TurnChangeEvent struct {
 	PlayersTurn bool
 }
+
 func (t *TurnChangeEvent) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {

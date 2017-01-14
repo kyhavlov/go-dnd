@@ -7,6 +7,7 @@ import (
 	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
+	log "github.com/Sirupsen/logrus"
 )
 
 type UiPanel struct {
@@ -34,6 +35,7 @@ type UiBackground struct {
 type UiSystem struct {
 	uiTexts map[*ecs.BasicEntity]*UiText
 	input   *InputSystem
+	render  *common.RenderSystem
 }
 
 type DynamicTextComponent struct {
@@ -58,6 +60,7 @@ func (us *UiSystem) Update(dt float32) {
 
 func (us *UiSystem) Add(e *ecs.BasicEntity, text *UiText) {
 	us.uiTexts[e] = text
+	us.render.Add(e, &text.RenderComponent, &text.SpaceComponent)
 }
 
 func (us *UiSystem) Remove(entity ecs.BasicEntity) {
@@ -67,14 +70,62 @@ func (us *UiSystem) Remove(entity ecs.BasicEntity) {
 // New is the initialisation of the System
 func (us *UiSystem) New(w *ecs.World) {
 	us.uiTexts = make(map[*ecs.BasicEntity]*UiText)
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *common.RenderSystem:
+			us.render = sys
+		}
+	}
 
 	NewMouseCoordPanel(us, w)
+}
+
+func (us *UiSystem) InitUI(w *ecs.World, playerCount int) {
+	// Add turn counters
+	readyFont := &common.Font{
+		URL:  "fonts/Gamegirl.ttf",
+		FG:   color.White,
+		Size: 12,
+	}
+	if err := readyFont.CreatePreloaded(); err != nil {
+		panic(err)
+	}
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *TurnSystem:
+			log.Infof("player count for ui: %d", playerCount)
+			for i := 0; i < playerCount; i++ {
+				readyStatus := UiText{BasicEntity: ecs.NewBasic()}
+				readyStatus.RenderComponent.Drawable = common.Text{
+					Font: readyFont,
+				}
+				readyStatus.SetShader(common.HUDShader)
+				readyStatus.SpaceComponent.Position.Set(24, float32(120+(i*18)))
+				readyStatus.RenderComponent.SetZIndex(2)
+				playerNum := i+1
+				readyStatus.DynamicTextComponent = DynamicTextComponent{
+					updateFunc: func() string {
+						ready := sys.IsPlayerReady(PlayerID(playerNum-1))
+						status := "Not Ready"
+						readyStatus.RenderComponent.Color = color.White
+						if ready {
+							status = "Ready"
+							readyStatus.RenderComponent.Color = color.RGBA{0, 255, 0, 120}
+						}
+						return fmt.Sprintf("Player %d: %v", playerNum, status)
+					},
+				}
+
+				us.Add(&readyStatus.BasicEntity, &readyStatus)
+			}
+		}
+	}
 }
 
 func NewMouseCoordPanel(uiSystem *UiSystem, world *ecs.World) {
 
 	position := engo.Point{24, 24}
-	width := float32(264)
+	width := float32(320)
 	height := float32(72)
 	bgColor := color.RGBA{200, 153, 0, 125}
 
@@ -100,9 +151,9 @@ func NewMouseCoordPanel(uiSystem *UiSystem, world *ecs.World) {
 
 	// Set font
 	fnt := &common.Font{
-		URL:  "fonts/Roboto-Regular.ttf",
+		URL:  "fonts/Gamegirl.ttf",
 		FG:   color.White,
-		Size: 24,
+		Size: 12,
 	}
 	err := fnt.CreatePreloaded()
 	if err != nil {
@@ -114,12 +165,12 @@ func NewMouseCoordPanel(uiSystem *UiSystem, world *ecs.World) {
 		Font: fnt,
 	}
 	xCoord.SetShader(common.HUDShader)
-	xCoord.SpaceComponent.Position.Set(position.X, position.Y+12)
+	xCoord.SpaceComponent.Position.Set(position.X+10, position.Y+12)
 	xCoord.RenderComponent.SetZIndex(2)
 
 	xCoord.DynamicTextComponent = DynamicTextComponent{
 		updateFunc: func() string {
-			return fmt.Sprintf("Mouse X position is : %d", int(uiSystem.input.mouseTracker.MouseX))
+			return fmt.Sprintf("Mouse X position is: %d", int(uiSystem.input.mouseTracker.MouseX))
 		},
 	}
 
@@ -128,20 +179,12 @@ func NewMouseCoordPanel(uiSystem *UiSystem, world *ecs.World) {
 		Font: fnt,
 	}
 	yCoord.SetShader(common.HUDShader)
-	yCoord.SpaceComponent.Position.Set(position.X, position.Y+36)
+	yCoord.SpaceComponent.Position.Set(position.X+10, position.Y+36)
 	yCoord.RenderComponent.SetZIndex(2)
 	yCoord.DynamicTextComponent = DynamicTextComponent{
 		updateFunc: func() string {
-			return fmt.Sprintf("Mouse Y position is : %d", int(uiSystem.input.mouseTracker.MouseY))
+			return fmt.Sprintf("Mouse Y position is: %d", int(uiSystem.input.mouseTracker.MouseY))
 		},
-	}
-
-	for _, system := range world.Systems() {
-		switch sys := system.(type) {
-		case *common.RenderSystem:
-			sys.Add(&xCoord.BasicEntity, &xCoord.RenderComponent, &xCoord.SpaceComponent)
-			sys.Add(&yCoord.BasicEntity, &yCoord.RenderComponent, &yCoord.SpaceComponent)
-		}
 	}
 
 	uiSystem.Add(&xCoord.BasicEntity, &xCoord)

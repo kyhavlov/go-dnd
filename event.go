@@ -58,5 +58,7 @@ func (es *EventSystem) Update(dt float32) {
 	}
 }
 
-func (es *EventSystem) AddEvents(events ...Event) { es.activeEvents = append(es.activeEvents, events...) }
+func (es *EventSystem) AddEvents(events ...Event) {
+	es.activeEvents = append(es.activeEvents, events...)
+}
 func (es *EventSystem) Remove(entity ecs.BasicEntity) {}
