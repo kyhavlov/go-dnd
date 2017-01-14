@@ -57,8 +57,8 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 
 		eventHistory: make([]Event, 0),
 
-		incoming: scene.incoming,
-		outgoing: scene.outgoing,
+		incoming:   scene.incoming,
+		outgoing:   scene.outgoing,
 		serverRoom: scene.serverRoom,
 	}
 
@@ -79,11 +79,13 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	world.AddSystem(&NetworkSystem{})
 	world.AddSystem(mapSystem)
 	world.AddSystem(&LightSystem{})
+	world.AddSystem(&TurnSystem{})
 }
 
 type GameStartEvent struct {
 	RandomSeed int64
 }
+
 func (gs GameStartEvent) Process(w *ecs.World, dt float32) bool {
 	log.Infof("Got random seed from server: %d", gs.RandomSeed)
 	GenerateMap(w, gs.RandomSeed)
@@ -110,6 +112,9 @@ func main() {
 	gob.Register(&SetPlayerEvent{})
 	gob.Register(&NewPlayerEvent{})
 	gob.Register(&MoveEvent{})
+	gob.Register(&PlayerAction{})
+	gob.Register(&PlayerReady{})
+	gob.Register(&TurnChangeEvent{})
 
 	scene := &DungeonScene{}
 

@@ -4,10 +4,10 @@ import (
 	"math/rand"
 	"sort"
 
-	log "github.com/Sirupsen/logrus"
 	"engo.io/ecs"
-	"engo.io/engo/common"
 	"engo.io/engo"
+	"engo.io/engo/common"
+	log "github.com/Sirupsen/logrus"
 )
 
 type RoomNode struct {
@@ -271,7 +271,7 @@ func GenerateMap(w *ecs.World, seed int64) []Event {
 	log.Infof("Map bounds: %d wide, %d tall", maxPoint.X-offset.X, maxPoint.Y-offset.Y)
 
 	// Initialize the map
-	MapWidth :=  maxPoint.X - offset.X
+	MapWidth := maxPoint.X - offset.X
 	MapHeight := maxPoint.Y - offset.Y
 	common.CameraBounds.Max = engo.Point{
 		X: float32(MapWidth * TileWidth),
@@ -300,7 +300,7 @@ func GenerateMap(w *ecs.World, seed int64) []Event {
 					Y: room.Y + j,
 				}
 
-				AddNewTile(w, loc, 861 + rand.Intn(8))
+				AddNewTile(w, loc, 861+rand.Intn(8))
 			}
 		}
 	}
@@ -310,7 +310,7 @@ func GenerateMap(w *ecs.World, seed int64) []Event {
 		tile.X -= offset.X
 		tile.Y -= offset.Y
 
-		AddNewTile(w, tile, 861 + rand.Intn(8))
+		AddNewTile(w, tile, 861+rand.Intn(8))
 	}
 
 	// Spawn creatures in some of the rooms

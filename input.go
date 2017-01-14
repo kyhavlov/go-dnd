@@ -2,6 +2,7 @@ package main
 
 import (
 	"engo.io/ecs"
+	"engo.io/engo"
 	"engo.io/engo/common"
 	log "github.com/Sirupsen/logrus"
 )
@@ -21,6 +22,8 @@ type InputSystem struct {
 
 	outgoing chan NetworkMessage
 }
+
+const ReadyKey = "ready"
 
 // Sets the PlayerID of the local InputSystem, so we know which player we are and what we control
 type SetPlayerEvent struct {
@@ -45,6 +48,8 @@ func (input *InputSystem) New(w *ecs.World) {
 	input.mouseTracker.MouseComponent = common.MouseComponent{Track: true}
 	input.mouseTracker.SpaceComponent = common.SpaceComponent{}
 
+	engo.Input.RegisterButton(ReadyKey, engo.T)
+
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *common.MouseSystem:
@@ -66,14 +71,26 @@ func (input *InputSystem) Update(dt float32) {
 
 			if len(path) < 17 {
 				input.outgoing <- NetworkMessage{
-					Events: []Event{&MoveEvent{
-						Id:   input.player.NetworkID,
-						Path: path,
+					Events: []Event{&PlayerAction{
+						PlayerID: input.PlayerID,
+						Action: &MoveEvent{
+							Id:   input.player.NetworkID,
+							Path: path,
+						},
 					}},
 				}
 			} else {
 				log.Info("Tried to move too far")
 			}
+		}
+	}
+
+	if engo.Input.Button(ReadyKey).JustPressed() {
+		input.outgoing <- NetworkMessage{
+			Events: []Event{&PlayerReady{
+				PlayerID: input.PlayerID,
+				Ready:    true,
+			}},
 		}
 	}
 }

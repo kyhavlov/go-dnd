@@ -42,6 +42,7 @@ type MoveEvent struct {
 
 // Pixels per frame to move entities
 const speed = 3
+
 func (move *MoveEvent) Process(w *ecs.World, dt float32) bool {
 	var lights *LightSystem
 	for _, system := range w.Systems() {

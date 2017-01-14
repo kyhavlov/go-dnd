@@ -51,9 +51,12 @@ func (event *NewPlayerEvent) Process(w *ecs.World, dt float32) bool {
 		case *LightSystem:
 			sys.Add(&player.BasicEntity, &DynamicLightSource{
 				spaceComponent: &player.SpaceComponent,
-				Brightness: 250,
+				Brightness:     250,
 			})
+		case *TurnSystem:
+			sys.PlayerReady[event.PlayerID] = false
 		}
+
 	}
 
 	log.Infof("New player added at %v, ID: %d", event.GridPoint, event.PlayerID)

@@ -104,7 +104,7 @@ func (room *ServerRoom) Join(connection net.Conn) {
 	go func() {
 		for {
 			message := <-client.incoming
-			log.Info("[server] new message from ", connection.RemoteAddr())
+			//log.Debugf("[server] new message from ", connection.RemoteAddr())
 			message.Sender = id
 			room.incoming <- message
 		}
@@ -139,7 +139,7 @@ func runServer(listener net.Listener, room *ServerRoom, players int) {
 		events = append(events, &NewPlayerEvent{
 			PlayerID: PlayerID(i),
 			GridPoint: GridPoint{
-				X: 6+i,
+				X: 6 + i,
 				Y: 4,
 			},
 		})

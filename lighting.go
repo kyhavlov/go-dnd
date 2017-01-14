@@ -13,11 +13,11 @@ const MIN_BRIGHTNESS = 150
 const LIGHT_DECREASE = 20
 
 type LightSystem struct {
-	mapSystem   *MapSystem
-	lights      map[*ecs.BasicEntity]LightSource
+	mapSystem *MapSystem
+	lights    map[*ecs.BasicEntity]LightSource
 
 	needsUpdate bool
-	timer float32
+	timer       float32
 }
 
 type LightSource interface {
@@ -33,14 +33,16 @@ type BasicLightSource struct {
 }
 
 func (b *BasicLightSource) GetLocation() GridPoint { return b.GridPoint }
-func (b *BasicLightSource) GetBrightness() uint8 { return b.Brightness }
+func (b *BasicLightSource) GetBrightness() uint8   { return b.Brightness }
 
 type DynamicLightSource struct {
 	spaceComponent *common.SpaceComponent
-	Brightness uint8
+	Brightness     uint8
 }
 
-func (d *DynamicLightSource) GetLocation() GridPoint { return PointToGridPoint(d.spaceComponent.Position) }
+func (d *DynamicLightSource) GetLocation() GridPoint {
+	return PointToGridPoint(d.spaceComponent.Position)
+}
 func (d *DynamicLightSource) GetBrightness() uint8 { return d.Brightness }
 
 // New is the initialisation of the System
@@ -56,7 +58,7 @@ func (ls *LightSystem) New(w *ecs.World) {
 
 	e := ecs.NewBasic()
 	ls.Add(&e, &BasicLightSource{
-		GridPoint: GridPoint{18, 3},
+		GridPoint:  GridPoint{18, 3},
 		Brightness: 250,
 	})
 
@@ -77,7 +79,7 @@ func (ls *LightSystem) Update(dt float32) {
 		// Increase the light of the tiles around the source in a diamond pattern,
 		// with the light strength fading with distance from the source.
 		for _, light := range ls.lights {
-			radius := int((light.GetBrightness() - MIN_BRIGHTNESS) / LIGHT_DECREASE) + 1
+			radius := int((light.GetBrightness()-MIN_BRIGHTNESS)/LIGHT_DECREASE) + 1
 			//log.Infof("radius: %d", radius)
 			for i := 0; i <= radius*2; i++ {
 				current := light.GetLocation()
@@ -91,7 +93,7 @@ func (ls *LightSystem) Update(dt float32) {
 							if tile := ls.mapSystem.Tiles[current.X][current.Y]; tile != nil {
 								lightStrength := (radius - current.distanceTo(light.GetLocation())) * LIGHT_DECREASE
 								//log.Infof("lights at %d,%d updated to %d", current.X, current.Y, int(tile.Color.(color.Alpha).A) + lightStrength)
-								tile.Color = color.Alpha{uint8(imath.Min(int(tile.Color.(color.Alpha).A) + lightStrength, 250))}
+								tile.Color = color.Alpha{uint8(imath.Min(int(tile.Color.(color.Alpha).A)+lightStrength, 250))}
 							}
 						}
 					}

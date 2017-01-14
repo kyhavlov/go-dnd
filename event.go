@@ -3,7 +3,6 @@ package main
 import (
 	"engo.io/ecs"
 	log "github.com/Sirupsen/logrus"
-	"reflect"
 )
 
 type EventSystem struct {
@@ -46,7 +45,7 @@ func (es *EventSystem) Update(dt float32) {
 			for _, event := range message.Events {
 				es.activeEvents = append(es.activeEvents, event)
 				if es.serverRoom != nil {
-					log.Infof("Sending event to all clients: %v", reflect.TypeOf(event))
+					//log.Infof("Sending event to all clients: %v", reflect.TypeOf(event))
 				}
 			}
 			if es.serverRoom != nil {
@@ -59,4 +58,5 @@ func (es *EventSystem) Update(dt float32) {
 	}
 }
 
+func (es *EventSystem) AddEvents(events ...Event) { es.activeEvents = append(es.activeEvents, events...) }
 func (es *EventSystem) Remove(entity ecs.BasicEntity) {}
