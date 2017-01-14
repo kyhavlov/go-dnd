@@ -12,7 +12,7 @@ import (
 
 type UiPanel struct {
 	ecs.BasicEntity
-	bg         UiBackground
+	bg         UiElement
 	textfields []UiText
 	position   engo.Point
 	height     float32
@@ -26,7 +26,7 @@ type UiText struct {
 	DynamicTextComponent
 }
 
-type UiBackground struct {
+type UiElement struct {
 	ecs.BasicEntity
 	common.RenderComponent
 	common.SpaceComponent
@@ -34,6 +34,8 @@ type UiBackground struct {
 
 type UiSystem struct {
 	uiTexts map[*ecs.BasicEntity]*UiText
+	actionIndicators map[PlayerID][]*UiElement
+
 	input   *InputSystem
 	render  *common.RenderSystem
 }
@@ -70,6 +72,8 @@ func (us *UiSystem) Remove(entity ecs.BasicEntity) {
 // New is the initialisation of the System
 func (us *UiSystem) New(w *ecs.World) {
 	us.uiTexts = make(map[*ecs.BasicEntity]*UiText)
+	us.actionIndicators = make(map[PlayerID][]*UiElement)
+
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *common.RenderSystem:
@@ -78,6 +82,19 @@ func (us *UiSystem) New(w *ecs.World) {
 	}
 
 	NewMouseCoordPanel(us, w)
+}
+
+func (us *UiSystem) UpdateActionIndicator(player PlayerID, elems []*UiElement) {
+	prev, ok := us.actionIndicators[player]
+	if ok {
+		for _, elem := range prev {
+			us.render.Remove(elem.BasicEntity)
+		}
+	}
+	for _, elem := range elems {
+		us.render.Add(&elem.BasicEntity, &elem.RenderComponent, &elem.SpaceComponent)
+	}
+	us.actionIndicators[player] = elems
 }
 
 func (us *UiSystem) InitUI(w *ecs.World, playerCount int) {
@@ -130,7 +147,7 @@ func NewMouseCoordPanel(uiSystem *UiSystem, world *ecs.World) {
 	bgColor := color.RGBA{200, 153, 0, 125}
 
 	// Create the panel background
-	bg := UiBackground{
+	bg := UiElement{
 		BasicEntity:     ecs.NewBasic(),
 		RenderComponent: common.RenderComponent{Drawable: common.Rectangle{BorderWidth: 1, BorderColor: color.White}, Color: bgColor},
 		SpaceComponent:  common.SpaceComponent{Position: position, Width: width, Height: height},

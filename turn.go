@@ -3,6 +3,9 @@ package main
 import (
 	"engo.io/ecs"
 	log "github.com/Sirupsen/logrus"
+	"engo.io/engo/common"
+	"image/color"
+	"engo.io/engo"
 )
 
 type TurnSystem struct {
@@ -10,7 +13,8 @@ type TurnSystem struct {
 	PlayerReady   map[PlayerID]bool
 	PlayersTurn   bool
 
-	eventSystem *EventSystem
+	event *EventSystem
+	ui    *UiSystem
 }
 
 func (ts *TurnSystem) IsPlayerReady(id PlayerID) bool {
@@ -26,7 +30,9 @@ func (ts *TurnSystem) New(w *ecs.World) {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *EventSystem:
-			ts.eventSystem = sys
+			ts.event = sys
+		case *UiSystem:
+			ts.ui = sys
 		}
 	}
 }
@@ -53,11 +59,12 @@ func (ts *TurnSystem) Update(dt float32) {
 			for id, event := range ts.PlayerActions {
 				events[id] = *event
 			}
-			ts.eventSystem.AddEvents(events...)
-			ts.eventSystem.AddEvents(&TurnChangeEvent{true})
+			ts.event.AddEvents(events...)
+			ts.event.AddEvents(&TurnChangeEvent{true})
 			for i := 0; i < playerCount; i++ {
 				ts.PlayerActions[PlayerID(i)] = nil
 				ts.PlayerReady[PlayerID(i)] = false
+				ts.ui.UpdateActionIndicator(PlayerID(i), nil)
 			}
 			ts.PlayersTurn = false
 		}
@@ -77,6 +84,35 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 		case *TurnSystem:
 			//log.Debugf("Setting action %v for player %d", reflect.TypeOf(p.Action), p.PlayerID)
 			sys.PlayerActions[p.PlayerID] = &p.Action
+		}
+	}
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *UiSystem:
+			switch action := p.Action.(type) {
+			case *MoveEvent:
+				var lines []*UiElement
+				for i := 0; i < len(action.Path)-1; i++ {
+					line := UiElement{BasicEntity: ecs.NewBasic()}
+					current := action.Path[i].toPixels()
+					next := action.Path[i+1].toPixels()
+					start := current
+					if current.X > next.X || current.Y > next.Y {
+						start = next
+					}
+					w := float32(3)
+					h := float32(3)
+					if current.X != next.X {
+						w = TileWidth
+					} else {
+						h = TileWidth
+					}
+					line.SpaceComponent = common.SpaceComponent{Position: engo.Point{start.X+TileWidth/2, start.Y+TileWidth/2}, Width: w, Height: h}
+					line.RenderComponent = common.RenderComponent{Drawable: common.Rectangle{}, Color: color.RGBA{0, 255, 0, 255}}
+					lines = append(lines, &line)
+				}
+				sys.UpdateActionIndicator(p.PlayerID, lines)
+			}
 		}
 	}
 	return true
