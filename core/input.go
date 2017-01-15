@@ -1,10 +1,11 @@
-package main
+package core
 
 import (
 	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
 	log "github.com/Sirupsen/logrus"
+	"github.com/kyhavlov/go-dnd/structs"
 )
 
 type MouseTracker struct {
@@ -16,8 +17,9 @@ type MouseTracker struct {
 type InputSystem struct {
 	mouseTracker MouseTracker
 	mapSystem    *MapSystem
+	turn         *TurnSystem
 
-	player *Creature
+	player *structs.Creature
 	PlayerID
 
 	outgoing chan NetworkMessage
@@ -54,12 +56,14 @@ func (input *InputSystem) New(w *ecs.World) {
 		switch sys := system.(type) {
 		case *common.MouseSystem:
 			sys.Add(&input.mouseTracker.BasicEntity, &input.mouseTracker.MouseComponent, &input.mouseTracker.SpaceComponent, nil)
+		case *TurnSystem:
+			input.turn = sys
 		}
 	}
 }
 
 func (input *InputSystem) Update(dt float32) {
-	if input.mouseTracker.MouseComponent.Clicked && input.player != nil {
+	if input.mouseTracker.MouseComponent.Clicked && input.player != nil && input.turn.PlayersTurn {
 		gridPoint := GridPoint{
 			X: int(input.mouseTracker.MouseComponent.MouseX / TileWidth),
 			Y: int(input.mouseTracker.MouseComponent.MouseY / TileWidth),
@@ -85,7 +89,7 @@ func (input *InputSystem) Update(dt float32) {
 		}
 	}
 
-	if engo.Input.Button(ReadyKey).JustPressed() {
+	if engo.Input.Button(ReadyKey).JustPressed() && input.turn.PlayersTurn {
 		input.outgoing <- NetworkMessage{
 			Events: []Event{&PlayerReady{
 				PlayerID: input.PlayerID,

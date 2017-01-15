@@ -1,11 +1,11 @@
-package main
+package core
 
 import (
 	"engo.io/ecs"
-	log "github.com/Sirupsen/logrus"
-	"engo.io/engo/common"
-	"image/color"
 	"engo.io/engo"
+	"engo.io/engo/common"
+	log "github.com/Sirupsen/logrus"
+	"image/color"
 )
 
 type TurnSystem struct {
@@ -107,7 +107,7 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 					} else {
 						h = TileWidth
 					}
-					line.SpaceComponent = common.SpaceComponent{Position: engo.Point{start.X+TileWidth/2, start.Y+TileWidth/2}, Width: w, Height: h}
+					line.SpaceComponent = common.SpaceComponent{Position: engo.Point{start.X + TileWidth/2, start.Y + TileWidth/2}, Width: w, Height: h}
 					line.RenderComponent = common.RenderComponent{Drawable: common.Rectangle{}, Color: color.RGBA{0, 255, 0, 255}}
 					lines = append(lines, &line)
 				}

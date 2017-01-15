@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"engo.io/ecs"
@@ -14,13 +14,6 @@ type EventSystem struct {
 	incoming   chan NetworkMessage
 	outgoing   chan NetworkMessage
 	serverRoom *ServerRoom
-}
-
-// Event is the interface for things which affect world state, such as
-// creature position, life, items, etc. It takes a time delta and returns
-// whether it has completed.
-type Event interface {
-	Process(*ecs.World, float32) bool
 }
 
 // New is the initialisation of the System

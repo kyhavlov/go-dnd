@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"fmt"
@@ -33,11 +33,11 @@ type UiElement struct {
 }
 
 type UiSystem struct {
-	uiTexts map[*ecs.BasicEntity]*UiText
+	uiTexts          map[*ecs.BasicEntity]*UiText
 	actionIndicators map[PlayerID][]*UiElement
 
-	input   *InputSystem
-	render  *common.RenderSystem
+	input  *InputSystem
+	render *common.RenderSystem
 }
 
 type DynamicTextComponent struct {
@@ -119,10 +119,10 @@ func (us *UiSystem) InitUI(w *ecs.World, playerCount int) {
 				readyStatus.SetShader(common.HUDShader)
 				readyStatus.SpaceComponent.Position.Set(24, float32(120+(i*18)))
 				readyStatus.RenderComponent.SetZIndex(2)
-				playerNum := i+1
+				playerNum := i + 1
 				readyStatus.DynamicTextComponent = DynamicTextComponent{
 					updateFunc: func() string {
-						ready := sys.IsPlayerReady(PlayerID(playerNum-1))
+						ready := sys.IsPlayerReady(PlayerID(playerNum - 1))
 						status := "Not Ready"
 						readyStatus.RenderComponent.Color = color.White
 						if ready {

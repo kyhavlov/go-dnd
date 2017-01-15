@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"engo.io/ecs"
@@ -43,7 +43,7 @@ type Tile struct {
 	Sprite int
 }
 
-// The map system tracks the tiles and light levels of the map
+// The map system tracks the tiles of the map
 type MapSystem struct {
 	Tiles [][]*Tile
 }

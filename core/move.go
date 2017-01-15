@@ -1,26 +1,27 @@
-package main
+package core
 
 import (
 	"engo.io/ecs"
 	"engo.io/engo/common"
 
 	"github.com/engoengine/math"
+	"github.com/kyhavlov/go-dnd/structs"
 )
 
 type MoveSystem struct {
-	networkIds      map[*ecs.BasicEntity]NetworkID
-	SpaceComponents map[NetworkID]*common.SpaceComponent
+	networkIds      map[*ecs.BasicEntity]structs.NetworkID
+	SpaceComponents map[structs.NetworkID]*common.SpaceComponent
 }
 
 // New is the initialisation of the System
 func (ms *MoveSystem) New(w *ecs.World) {
-	ms.networkIds = make(map[*ecs.BasicEntity]NetworkID)
-	ms.SpaceComponents = make(map[NetworkID]*common.SpaceComponent)
+	ms.networkIds = make(map[*ecs.BasicEntity]structs.NetworkID)
+	ms.SpaceComponents = make(map[structs.NetworkID]*common.SpaceComponent)
 }
 
 func (ms *MoveSystem) Update(dt float32) {}
 
-func (ms *MoveSystem) Add(entity *ecs.BasicEntity, space *common.SpaceComponent, nid NetworkID) {
+func (ms *MoveSystem) Add(entity *ecs.BasicEntity, space *common.SpaceComponent, nid structs.NetworkID) {
 	ms.SpaceComponents[nid] = space
 	ms.networkIds[entity] = nid
 }
@@ -32,7 +33,7 @@ func (ms *MoveSystem) Remove(entity ecs.BasicEntity) {
 
 // Moves the entity with the given Id along the path
 type MoveEvent struct {
-	Id   NetworkID
+	Id   structs.NetworkID
 	Path []GridPoint
 
 	// Tracks the node of the path we're currently moving towards

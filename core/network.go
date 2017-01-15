@@ -1,15 +1,15 @@
-package main
+package core
 
 import (
 	"encoding/gob"
 	"engo.io/ecs"
 	log "github.com/Sirupsen/logrus"
+	"github.com/kyhavlov/go-dnd/structs"
 	"net"
 )
 
-// Unique identifiers for referring to objects/players over the network
+// Unique player identifier number
 type PlayerID uint64
-type NetworkID uint64
 
 type NetworkMessage struct {
 	Sender    PlayerID
@@ -19,11 +19,11 @@ type NetworkMessage struct {
 }
 
 type NetworkSystem struct {
-	networkIdCounter NetworkID
+	networkIdCounter structs.NetworkID
 	myPlayerId       int
 }
 
-func (ns *NetworkSystem) nextId() NetworkID {
+func (ns *NetworkSystem) nextId() structs.NetworkID {
 	ns.networkIdCounter += 1
 	return ns.networkIdCounter
 }
