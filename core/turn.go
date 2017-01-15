@@ -2,10 +2,7 @@ package core
 
 import (
 	"engo.io/ecs"
-	"engo.io/engo"
-	"engo.io/engo/common"
 	log "github.com/Sirupsen/logrus"
-	"image/color"
 )
 
 type TurnSystem struct {
@@ -60,7 +57,7 @@ func (ts *TurnSystem) Update(dt float32) {
 				events[id] = *event
 			}
 			ts.event.AddEvents(events...)
-			ts.event.AddEvents(&TurnChangeEvent{true})
+			ts.event.AddEvents(&TurnChange{true})
 			for i := 0; i < playerCount; i++ {
 				ts.PlayerActions[PlayerID(i)] = nil
 				ts.PlayerReady[PlayerID(i)] = false
@@ -72,79 +69,3 @@ func (ts *TurnSystem) Update(dt float32) {
 }
 
 func (ts *TurnSystem) Remove(entity ecs.BasicEntity) {}
-
-type PlayerAction struct {
-	PlayerID PlayerID
-	Action   Event
-}
-
-func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *TurnSystem:
-			//log.Debugf("Setting action %v for player %d", reflect.TypeOf(p.Action), p.PlayerID)
-			sys.PlayerActions[p.PlayerID] = &p.Action
-		}
-	}
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *UiSystem:
-			switch action := p.Action.(type) {
-			case *MoveEvent:
-				var lines []*UiElement
-				for i := 0; i < len(action.Path)-1; i++ {
-					line := UiElement{BasicEntity: ecs.NewBasic()}
-					current := action.Path[i].toPixels()
-					next := action.Path[i+1].toPixels()
-					start := current
-					if current.X > next.X || current.Y > next.Y {
-						start = next
-					}
-					w := float32(3)
-					h := float32(3)
-					if current.X != next.X {
-						w = TileWidth
-					} else {
-						h = TileWidth
-					}
-					line.SpaceComponent = common.SpaceComponent{Position: engo.Point{start.X + TileWidth/2, start.Y + TileWidth/2}, Width: w, Height: h}
-					line.RenderComponent = common.RenderComponent{Drawable: common.Rectangle{}, Color: color.RGBA{0, 255, 0, 255}}
-					lines = append(lines, &line)
-				}
-				sys.UpdateActionIndicator(p.PlayerID, lines)
-			}
-		}
-	}
-	return true
-}
-
-type PlayerReady struct {
-	PlayerID
-	Ready bool
-}
-
-func (p *PlayerReady) Process(w *ecs.World, dt float32) bool {
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *TurnSystem:
-			//log.Debugf("Setting ready to %v for player %d", p.Ready, p.PlayerID)
-			sys.PlayerReady[p.PlayerID] = p.Ready
-		}
-	}
-	return true
-}
-
-type TurnChangeEvent struct {
-	PlayersTurn bool
-}
-
-func (t *TurnChangeEvent) Process(w *ecs.World, dt float32) bool {
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *TurnSystem:
-			log.Infof("Setting turn back to players")
-			sys.PlayersTurn = t.PlayersTurn
-		}
-	}
-	return true
-}

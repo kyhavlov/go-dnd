@@ -1,4 +1,4 @@
-package core
+package mapgen
 
 import (
 	"math/rand"
@@ -9,18 +9,19 @@ import (
 	"engo.io/engo/common"
 	log "github.com/Sirupsen/logrus"
 	"github.com/kyhavlov/go-dnd/structs"
+	"image/color"
 )
 
 type RoomNode struct {
 	Neighbors map[int]*RoomNode
 	Id        int
-	GridPoint
+	structs.GridPoint
 	Size    int
 	visited bool
 	depth   int
 }
 
-func (room *RoomNode) Contains(point GridPoint) bool {
+func (room *RoomNode) Contains(point structs.GridPoint) bool {
 	if room.X <= point.X && room.X+room.Size >= point.X && room.Y <= point.Y && room.Y+room.Size <= point.Y {
 		return true
 	}
@@ -55,7 +56,7 @@ func (m Rooms) Less(i, j int) bool {
 	return m[i].depth > m[j].depth
 }
 
-func addNewRoom(id int, random *rand.Rand, edgeRoom *RoomNode) (*RoomNode, []GridPoint) {
+func addNewRoom(id int, random *rand.Rand, edgeRoom *RoomNode) (*RoomNode, []structs.GridPoint) {
 	newRoom := &RoomNode{
 		Neighbors: make(map[int]*RoomNode),
 		Id:        id,
@@ -67,10 +68,10 @@ func addNewRoom(id int, random *rand.Rand, edgeRoom *RoomNode) (*RoomNode, []Gri
 	xOffset := -6 + random.Intn(edgeRoom.Size+12)
 	yOffset := -6 + random.Intn(edgeRoom.Size+12)
 
-	newRoom.GridPoint = GridPoint{edgeRoom.X + xOffset, edgeRoom.Y + yOffset}
+	newRoom.GridPoint = structs.GridPoint{edgeRoom.X + xOffset, edgeRoom.Y + yOffset}
 
 	// generate a connecting hallway
-	hallway := make([]GridPoint, 0)
+	hallway := make([]structs.GridPoint, 0)
 	leftRoom := edgeRoom
 	rightRoom := newRoom
 	bottomRoom := edgeRoom
@@ -86,8 +87,8 @@ func addNewRoom(id int, random *rand.Rand, edgeRoom *RoomNode) (*RoomNode, []Gri
 		topRoom = edgeRoom
 	}
 
-	start := GridPoint{}
-	end := GridPoint{}
+	start := structs.GridPoint{}
+	end := structs.GridPoint{}
 
 	if leftRoom.X+leftRoom.Size > rightRoom.X && leftRoom.X < rightRoom.X+rightRoom.Size {
 		start.X = rightRoom.X + random.Intn(leftRoom.X+leftRoom.Size-rightRoom.X)
@@ -107,14 +108,14 @@ func addNewRoom(id int, random *rand.Rand, edgeRoom *RoomNode) (*RoomNode, []Gri
 
 	for i := start.Y; i <= end.Y; i++ {
 		if bottomRoom == rightRoom {
-			hallway = append(hallway, GridPoint{start.X, i})
+			hallway = append(hallway, structs.GridPoint{start.X, i})
 		} else {
-			hallway = append(hallway, GridPoint{end.X, i})
+			hallway = append(hallway, structs.GridPoint{end.X, i})
 		}
 	}
 
 	for i := start.X; i <= end.X; i++ {
-		hallway = append(hallway, GridPoint{i, start.Y})
+		hallway = append(hallway, structs.GridPoint{i, start.Y})
 	}
 
 	//log.Infof("Hallway for rooms (%d, %d) to (%d, %d), start: (%d, %d), end: (%d, %d)", edgeRoom.X, edgeRoom.Y, newRoom.X, newRoom.Y, start.X, start.Y, end.X, end.Y)
@@ -124,12 +125,12 @@ func addNewRoom(id int, random *rand.Rand, edgeRoom *RoomNode) (*RoomNode, []Gri
 }
 
 func roomIsValid(room *RoomNode, rooms []*RoomNode) bool {
-	roomMax := GridPoint{
+	roomMax := structs.GridPoint{
 		X: room.X + room.Size,
 		Y: room.Y + room.Size,
 	}
 	for _, otherRoom := range rooms {
-		otherMax := GridPoint{
+		otherMax := structs.GridPoint{
 			X: otherRoom.X + otherRoom.Size,
 			Y: otherRoom.Y + otherRoom.Size,
 		}
@@ -142,11 +143,18 @@ func roomIsValid(room *RoomNode, rooms []*RoomNode) bool {
 	return true
 }
 
+type Map struct {
+	Tiles []*structs.Tile
+	Creatures []*structs.Creature
+	Width int
+	Height int
+}
+
 // Generates a map from a seed number
-func GenerateMap(w *ecs.World, seed int64) []Event {
+func GenerateMap(seed int64) *Map {
 	random := rand.New(rand.NewSource(seed))
-	rooms := make(Rooms, 0)
-	hallways := make([]GridPoint, 0)
+	var rooms Rooms
+	var hallways []structs.GridPoint
 
 	dungeonLength := 7 + random.Intn(7)
 	idInc := 0
@@ -165,7 +173,7 @@ func GenerateMap(w *ecs.World, seed int64) []Event {
 	for depthReached < dungeonLength {
 		idInc++
 		newRoom := &RoomNode{}
-		hallway := make([]GridPoint, 0)
+		hallway := make([]structs.GridPoint, 0)
 		madeNewRoom := false
 
 		// try to spawn a new room, starting from the furthest room
@@ -229,13 +237,13 @@ func GenerateMap(w *ecs.World, seed int64) []Event {
 	}
 
 	// Get the minimum X/Y values rooms were placed at so we can align the level to 0,0
-	offset := GridPoint{
+	offset := structs.GridPoint{
 		X: startingRoom.X,
 		Y: startingRoom.Y,
 	}
 
 	// and the maximum X/Y values so we know the bounds of the level
-	maxPoint := GridPoint{}
+	maxPoint := structs.GridPoint{}
 
 	for _, room := range rooms {
 		if room.X < offset.X {
@@ -268,40 +276,36 @@ func GenerateMap(w *ecs.World, seed int64) []Event {
 		}
 	}
 
-	events := make([]Event, 0)
 	log.Infof("Map bounds: %d wide, %d tall", maxPoint.X-offset.X, maxPoint.Y-offset.Y)
 
 	// Initialize the map
-	MapWidth := maxPoint.X - offset.X
-	MapHeight := maxPoint.Y - offset.Y
-	common.CameraBounds.Max = engo.Point{
-		X: float32(MapWidth * TileWidth),
-		Y: float32(MapHeight * TileWidth),
+	level := &Map{
+		Width: maxPoint.X - offset.X,
+		Height: maxPoint.Y - offset.Y,
 	}
 
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *MapSystem:
-			sys.Tiles = make([][]*Tile, MapWidth)
-			for i, _ := range sys.Tiles {
-				sys.Tiles[i] = make([]*Tile, MapHeight)
-			}
-		}
+	common.CameraBounds.Max = engo.Point{
+		X: float32(level.Width * structs.TileWidth),
+		Y: float32(level.Height * structs.TileWidth),
 	}
 
 	// Add tiles for the map based on the rooms generated
+	sheet := common.NewSpritesheetFromFile(structs.SpritesheetPath, structs.TileWidth, structs.TileWidth)
+	if sheet == nil {
+		log.Fatalf("Unable to load texture file")
+	}
 	for _, room := range rooms {
 		room.X -= offset.X
 		room.Y -= offset.Y
 		log.Debug(room)
 		for i := 0; i < room.Size; i++ {
 			for j := 0; j < room.Size; j++ {
-				loc := GridPoint{
+				loc := structs.GridPoint{
 					X: room.X + i,
 					Y: room.Y + j,
 				}
 
-				AddNewTile(w, loc, 861+rand.Intn(8))
+				level.Tiles = append(level.Tiles, newTile(sheet, loc, 861+rand.Intn(8)))
 			}
 		}
 	}
@@ -311,7 +315,7 @@ func GenerateMap(w *ecs.World, seed int64) []Event {
 		tile.X -= offset.X
 		tile.Y -= offset.Y
 
-		AddNewTile(w, tile, 861+rand.Intn(8))
+		level.Tiles = append(level.Tiles, newTile(sheet, tile, 861+rand.Intn(8)))
 	}
 
 	// Spawn creatures in some of the rooms
@@ -319,55 +323,46 @@ func GenerateMap(w *ecs.World, seed int64) []Event {
 		if random.Intn(2) == 0 && room != startingRoom {
 			count := 1 + random.Intn(3)
 			for i := 0; i < count; i++ {
-				coords := GridPoint{
+				coords := structs.GridPoint{
 					X: room.X + random.Intn(room.Size),
 					Y: room.Y + random.Intn(room.Size),
 				}
-				AddNewCreature(w, coords, 0)
+				creature := structs.Creature{}
+				creature.BasicEntity = ecs.NewBasic()
+				creature.SpaceComponent = common.SpaceComponent{
+					Position: coords.ToPixels(),
+					Width:    structs.TileWidth,
+					Height:   structs.TileWidth,
+				}
+				creature.RenderComponent = common.RenderComponent{
+					Drawable: sheet.Cell(533),
+					Scale:    engo.Point{1, 1},
+				}
+				creature.HealthComponent = structs.HealthComponent{
+					Life: 40,
+				}
+				level.Creatures = append(level.Creatures, &creature)
 			}
 		}
 	}
 
-	return events
+	return level
 }
 
-func AddNewCreature(w *ecs.World, coords GridPoint, life int) {
-	sheet := common.NewSpritesheetFromFile(SpritesheetPath, TileWidth, TileWidth)
-
-	if sheet == nil {
-		log.Fatalf("Unable to load texture file")
+func newTile(sheet *common.Spritesheet, coords structs.GridPoint, sprite int) *structs.Tile {
+	tile := structs.Tile{}
+	tile.BasicEntity = ecs.NewBasic()
+	tile.SpaceComponent = common.SpaceComponent{
+		Position: coords.ToPixels(),
+		Width:    structs.TileWidth,
+		Height:   structs.TileWidth,
 	}
-
-	creature := structs.Creature{}
-	creature.BasicEntity = ecs.NewBasic()
-	creature.SpaceComponent = common.SpaceComponent{
-		Position: coords.toPixels(),
-		Width:    TileWidth,
-		Height:   TileWidth,
-	}
-	creature.RenderComponent = common.RenderComponent{
-		Drawable: sheet.Cell(533),
+	tile.RenderComponent = common.RenderComponent{
+		Drawable: sheet.Cell(sprite),
+		Color:    color.Alpha{structs.MIN_BRIGHTNESS},
 		Scale:    engo.Point{1, 1},
 	}
-	creature.HealthComponent = structs.HealthComponent{
-		Life: life,
-	}
+	tile.GridPoint = coords
 
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *NetworkSystem:
-			creature.NetworkID = sys.nextId()
-		}
-	}
-
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *common.RenderSystem:
-			sys.Add(&creature.BasicEntity, &creature.RenderComponent, &creature.SpaceComponent)
-		case *MoveSystem:
-			sys.Add(&creature.BasicEntity, &creature.SpaceComponent, creature.NetworkID)
-		case *HealthSystem:
-			sys.Add(&creature.BasicEntity, &creature.HealthComponent)
-		}
-	}
+	return &tile
 }

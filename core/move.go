@@ -34,7 +34,7 @@ func (ms *MoveSystem) Remove(entity ecs.BasicEntity) {
 // Moves the entity with the given Id along the path
 type MoveEvent struct {
 	Id   structs.NetworkID
-	Path []GridPoint
+	Path []structs.GridPoint
 
 	// Tracks the node of the path we're currently moving towards
 	// private field so we don't send it over the network
@@ -57,7 +57,7 @@ func (move *MoveEvent) Process(w *ecs.World, dt float32) bool {
 		switch sys := system.(type) {
 		case *MoveSystem:
 			current := &sys.SpaceComponents[move.Id].Position
-			target := move.Path[move.current].toPixels()
+			target := move.Path[move.current].ToPixels()
 			if current.PointDistance(target) <= 3.0 {
 				lights.needsUpdate = true
 				current.X = target.X

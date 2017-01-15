@@ -1,39 +1,42 @@
 package core
 
-import "github.com/engoengine/math/imath"
+import (
+	"github.com/engoengine/math/imath"
+	"github.com/kyhavlov/go-dnd/structs"
+)
 
 // Standard A* implementation for finding a shortest path between two map tiles.
 // Comments stolen from wikipedia article on A*: https://en.wikipedia.org/wiki/A*_search_algorithm
-func GetPath(start, goal *Tile, tiles [][]*Tile) []GridPoint {
+func GetPath(start, goal *structs.Tile, tiles [][]*structs.Tile) []structs.GridPoint {
 	// The set of nodes already evaluated
-	closedSet := make(map[*Tile]bool)
+	closedSet := make(map[*structs.Tile]bool)
 	// The set of currently discovered nodes still to be evaluated.
 	// Initially, only the start node is known.
-	openSet := make(map[*Tile]bool)
+	openSet := make(map[*structs.Tile]bool)
 	openSet[start] = true
 
 	// For each node, which node it can most efficiently be reached from.
 	// If a node can be reached from many nodes, cameFrom will eventually contain the
 	// most efficient previous step.
-	cameFrom := make(map[*Tile]*Tile)
+	cameFrom := make(map[*structs.Tile]*structs.Tile)
 
 	// For each node, the cost of getting from the start node to that node.
-	gScore := make(map[*Tile]int)
+	gScore := make(map[*structs.Tile]int)
 	// The cost of going from start to start is zero.
 	gScore[start] = 0
 
 	// For each node, the total cost of getting from the start node to the goal
 	// by passing by that node. That value is partly known, partly heuristic.
-	fScore := make(map[*Tile]int)
+	fScore := make(map[*structs.Tile]int)
 	// For the first node, that value is completely heuristic.
 	fScore[start] = getEstimatedDistance(start, goal)
 
-	path := make([]GridPoint, 0)
+	path := make([]structs.GridPoint, 0)
 
 	for len(openSet) > 0 {
 		// Set current to the node in the open set with the lowest fScore
 		// TODO: make the open set a priority queue instead of a plain map for better performance
-		var current *Tile = nil
+		var current *structs.Tile = nil
 		for tile, _ := range openSet {
 			if current == nil {
 				current = tile
@@ -91,13 +94,13 @@ func GetPath(start, goal *Tile, tiles [][]*Tile) []GridPoint {
 	return path
 }
 
-func getEstimatedDistance(a, b *Tile) int {
+func getEstimatedDistance(a, b *structs.Tile) int {
 	return imath.Abs(a.X-b.X) + imath.Abs(a.Y-b.Y)
 }
 
 // TODO: re-use the neighbors slice instead of allocating a new one every time we call this
-func getNeighbors(tile *Tile, tiles [][]*Tile) []*Tile {
-	neighbors := make([]*Tile, 0)
+func getNeighbors(tile *structs.Tile, tiles [][]*structs.Tile) []*structs.Tile {
+	neighbors := make([]*structs.Tile, 0)
 
 	if tile.X > 0 && tiles[tile.X-1][tile.Y] != nil {
 		neighbors = append(neighbors, tiles[tile.X-1][tile.Y])

@@ -132,14 +132,14 @@ func runServer(listener net.Listener, room *ServerRoom, players int) {
 	}
 
 	// Send the game start event and create players/assign player IDs
-	events := []Event{GameStartEvent{
+	events := []Event{GameStart{
 		RandomSeed:  3434323421999,
 		PlayerCount: players + 1,
 	}}
 	for i := 0; i < players+1; i++ {
-		events = append(events, &NewPlayerEvent{
+		events = append(events, &NewPlayer{
 			PlayerID: PlayerID(i),
-			GridPoint: GridPoint{
+			GridPoint: structs.GridPoint{
 				X: 6 + i,
 				Y: 4,
 			},
@@ -150,7 +150,7 @@ func runServer(listener net.Listener, room *ServerRoom, players int) {
 	}
 	for i := 1; i <= players; i++ {
 		room.SendToClient(PlayerID(i), NetworkMessage{
-			Events: []Event{&SetPlayerEvent{PlayerID(i)}},
+			Events: []Event{&SetPlayerID{PlayerID(i)}},
 		})
 	}
 }

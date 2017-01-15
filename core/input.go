@@ -27,23 +27,6 @@ type InputSystem struct {
 
 const ReadyKey = "ready"
 
-// Sets the PlayerID of the local InputSystem, so we know which player we are and what we control
-type SetPlayerEvent struct {
-	PlayerID
-}
-
-func (event *SetPlayerEvent) Process(w *ecs.World, dt float32) bool {
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *InputSystem:
-			sys.PlayerID = event.PlayerID
-			log.Info("player ID set to: ", event.PlayerID)
-		}
-	}
-
-	return true
-}
-
 // New is the initialisation of the System
 func (input *InputSystem) New(w *ecs.World) {
 	input.mouseTracker.BasicEntity = ecs.NewBasic()
@@ -64,13 +47,13 @@ func (input *InputSystem) New(w *ecs.World) {
 
 func (input *InputSystem) Update(dt float32) {
 	if input.mouseTracker.MouseComponent.Clicked && input.player != nil && input.turn.PlayersTurn {
-		gridPoint := GridPoint{
-			X: int(input.mouseTracker.MouseComponent.MouseX / TileWidth),
-			Y: int(input.mouseTracker.MouseComponent.MouseY / TileWidth),
+		gridPoint := structs.GridPoint{
+			X: int(input.mouseTracker.MouseComponent.MouseX / structs.TileWidth),
+			Y: int(input.mouseTracker.MouseComponent.MouseY / structs.TileWidth),
 		}
 
 		if input.mapSystem.GetTileAt(gridPoint) != nil {
-			start := input.mapSystem.GetTileAt(PointToGridPoint(input.player.SpaceComponent.Position))
+			start := input.mapSystem.GetTileAt(structs.PointToGridPoint(input.player.SpaceComponent.Position))
 			path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles)
 
 			if len(path) < 17 {

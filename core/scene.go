@@ -8,6 +8,7 @@ import (
 	"engo.io/ecs"
 	"engo.io/engo/common"
 	log "github.com/Sirupsen/logrus"
+	"github.com/kyhavlov/go-dnd/structs"
 )
 
 // The main scene for the game, representing a level
@@ -26,7 +27,7 @@ func (*DungeonScene) Type() string { return "dnd" }
 // Preload is called before loading any assets from the disk,
 // to allow you to register / queue them
 func (*DungeonScene) Preload() {
-	engo.Files.Load(SpritesheetPath)
+	engo.Files.Load(structs.SpritesheetPath)
 
 	// Load a font
 	err := engo.Files.Load("fonts/Gamegirl.ttf")

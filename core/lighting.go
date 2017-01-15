@@ -7,9 +7,9 @@ import (
 	"github.com/engoengine/math/imath"
 	//log "github.com/Sirupsen/logrus"
 	"engo.io/engo/common"
+	"github.com/kyhavlov/go-dnd/structs"
 )
 
-const MIN_BRIGHTNESS = 150
 const LIGHT_DECREASE = 20
 
 type LightSystem struct {
@@ -21,18 +21,18 @@ type LightSystem struct {
 }
 
 type LightSource interface {
-	GetLocation() GridPoint
+	GetLocation() structs.GridPoint
 	GetBrightness() uint8
 }
 
 type BasicLightSource struct {
-	GridPoint
+	structs.GridPoint
 
 	// The starting brightness alpha value. 255 is full brightness
 	Brightness uint8
 }
 
-func (b *BasicLightSource) GetLocation() GridPoint { return b.GridPoint }
+func (b *BasicLightSource) GetLocation() structs.GridPoint { return b.GridPoint }
 func (b *BasicLightSource) GetBrightness() uint8   { return b.Brightness }
 
 type DynamicLightSource struct {
@@ -40,8 +40,8 @@ type DynamicLightSource struct {
 	Brightness     uint8
 }
 
-func (d *DynamicLightSource) GetLocation() GridPoint {
-	return PointToGridPoint(d.spaceComponent.Position)
+func (d *DynamicLightSource) GetLocation() structs.GridPoint {
+	return structs.PointToGridPoint(d.spaceComponent.Position)
 }
 func (d *DynamicLightSource) GetBrightness() uint8 { return d.Brightness }
 
@@ -58,7 +58,7 @@ func (ls *LightSystem) New(w *ecs.World) {
 
 	e := ecs.NewBasic()
 	ls.Add(&e, &BasicLightSource{
-		GridPoint:  GridPoint{18, 3},
+		GridPoint:  structs.GridPoint{18, 3},
 		Brightness: 250,
 	})
 
@@ -71,7 +71,7 @@ func (ls *LightSystem) Update(dt float32) {
 		for _, row := range ls.mapSystem.Tiles {
 			for _, tile := range row {
 				if tile != nil {
-					tile.Color = color.Alpha{MIN_BRIGHTNESS}
+					tile.Color = color.Alpha{structs.MIN_BRIGHTNESS}
 				}
 			}
 		}
@@ -79,7 +79,7 @@ func (ls *LightSystem) Update(dt float32) {
 		// Increase the light of the tiles around the source in a diamond pattern,
 		// with the light strength fading with distance from the source.
 		for _, light := range ls.lights {
-			radius := int((light.GetBrightness()-MIN_BRIGHTNESS)/LIGHT_DECREASE) + 1
+			radius := int((light.GetBrightness()-structs.MIN_BRIGHTNESS)/LIGHT_DECREASE) + 1
 			//log.Infof("radius: %d", radius)
 			for i := 0; i <= radius*2; i++ {
 				current := light.GetLocation()
@@ -88,10 +88,10 @@ func (ls *LightSystem) Update(dt float32) {
 
 				for j := 0; j <= radius*2; j++ {
 					//log.Infof("%d, %d distance to %d, %d: %d", current.X, current.Y, light.X, light.Y, current.distanceTo(&light.GridPoint))
-					if current.distanceTo(light.GetLocation()) <= radius {
+					if current.DistanceTo(light.GetLocation()) <= radius {
 						if current.X >= 0 && current.X <= ls.mapSystem.MapWidth() && current.Y >= 0 && current.Y <= ls.mapSystem.MapHeight() {
 							if tile := ls.mapSystem.Tiles[current.X][current.Y]; tile != nil {
-								lightStrength := (radius - current.distanceTo(light.GetLocation())) * LIGHT_DECREASE
+								lightStrength := (radius - current.DistanceTo(light.GetLocation())) * LIGHT_DECREASE
 								//log.Infof("lights at %d,%d updated to %d", current.X, current.Y, int(tile.Color.(color.Alpha).A) + lightStrength)
 								tile.Color = color.Alpha{uint8(imath.Min(int(tile.Color.(color.Alpha).A)+lightStrength, 250))}
 							}
