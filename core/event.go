@@ -1,13 +1,13 @@
 package core
 
 import (
-	"engo.io/ecs"
-	log "github.com/Sirupsen/logrus"
-	"github.com/kyhavlov/go-dnd/structs"
-	"engo.io/engo/common"
-	"engo.io/engo"
 	"encoding/gob"
+	"engo.io/ecs"
+	"engo.io/engo"
+	"engo.io/engo/common"
+	log "github.com/Sirupsen/logrus"
 	"github.com/kyhavlov/go-dnd/mapgen"
+	"github.com/kyhavlov/go-dnd/structs"
 	"image/color"
 )
 
@@ -24,7 +24,8 @@ func RegisterEvents() {
 	gob.Register(&GameStart{})
 	gob.Register(&SetPlayerID{})
 	gob.Register(&NewPlayer{})
-	gob.Register(&MoveEvent{})
+	gob.Register(&Move{})
+	gob.Register(&Attack{})
 	gob.Register(&PlayerAction{})
 	gob.Register(&PlayerReady{})
 	gob.Register(&TurnChange{})
@@ -97,8 +98,11 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 	sheet := common.NewSpritesheetFromFile(structs.SpritesheetPath, structs.TileWidth, structs.TileWidth)
 
 	player := structs.Creature{
-		BasicEntity: ecs.NewBasic(),
+		BasicEntity:  ecs.NewBasic(),
 		IsPlayerTeam: true,
+	}
+	player.HealthComponent = structs.HealthComponent{
+		Life: 50,
 	}
 	player.SpaceComponent = common.SpaceComponent{
 		Position: event.GridPoint.ToPixels(),
@@ -141,18 +145,21 @@ type PlayerAction struct {
 }
 
 func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
+	var move *MoveSystem
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *TurnSystem:
 			//log.Debugf("Setting action %v for player %d", reflect.TypeOf(p.Action), p.PlayerID)
 			sys.PlayerActions[p.PlayerID] = &p.Action
+		case *MoveSystem:
+			move = sys
 		}
 	}
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *UiSystem:
 			switch action := p.Action.(type) {
-			case *MoveEvent:
+			case *Move:
 				var lines []*UiElement
 				for i := 0; i < len(action.Path)-1; i++ {
 					line := UiElement{BasicEntity: ecs.NewBasic()}
@@ -174,6 +181,12 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 					lines = append(lines, &line)
 				}
 				sys.UpdateActionIndicator(p.PlayerID, lines)
+			case *Attack:
+				target := move.Creatures[action.TargetId].Position
+				circle := &UiElement{BasicEntity: ecs.NewBasic()}
+				circle.SpaceComponent = common.SpaceComponent{Position: target, Width: structs.TileWidth, Height: structs.TileWidth}
+				circle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
+				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{circle})
 			}
 		}
 	}

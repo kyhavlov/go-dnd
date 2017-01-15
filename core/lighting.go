@@ -33,7 +33,7 @@ type BasicLightSource struct {
 }
 
 func (b *BasicLightSource) GetLocation() structs.GridPoint { return b.GridPoint }
-func (b *BasicLightSource) GetBrightness() uint8   { return b.Brightness }
+func (b *BasicLightSource) GetBrightness() uint8           { return b.Brightness }
 
 type DynamicLightSource struct {
 	spaceComponent *common.SpaceComponent

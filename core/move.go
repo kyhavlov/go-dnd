@@ -12,7 +12,7 @@ type MoveSystem struct {
 	networkIds      map[*ecs.BasicEntity]structs.NetworkID
 	SpaceComponents map[structs.NetworkID]*common.SpaceComponent
 
-	Creatures map[structs.NetworkID]*structs.Creature
+	Creatures         map[structs.NetworkID]*structs.Creature
 	CreatureLocations [][]*structs.Creature
 }
 
@@ -48,7 +48,7 @@ func (ms *MoveSystem) Remove(entity ecs.BasicEntity) {
 }
 
 // Moves the entity with the given Id along the path
-type MoveEvent struct {
+type Move struct {
 	Id   structs.NetworkID
 	Path []structs.GridPoint
 
@@ -60,7 +60,7 @@ type MoveEvent struct {
 // Pixels per frame to move entities
 const speed = 3
 
-func (move *MoveEvent) Process(w *ecs.World, dt float32) bool {
+func (move *Move) Process(w *ecs.World, dt float32) bool {
 	var lights *LightSystem
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {

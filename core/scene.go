@@ -1,11 +1,11 @@
 package core
 
 import (
-	"os"
 	"net"
+	"os"
 
-	"engo.io/engo"
 	"engo.io/ecs"
+	"engo.io/engo"
 	"engo.io/engo/common"
 	log "github.com/Sirupsen/logrus"
 	"github.com/kyhavlov/go-dnd/structs"
@@ -47,8 +47,8 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	input := &InputSystem{
 		mapSystem: mapSystem,
 		outgoing:  scene.outgoing,
-		turn: turn,
-		move: move,
+		turn:      turn,
+		move:      move,
 	}
 
 	ui := &UiSystem{
@@ -83,6 +83,7 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	world.AddSystem(mapSystem)
 	world.AddSystem(&LightSystem{})
 	world.AddSystem(turn)
+	world.AddSystem(&HealthSystem{})
 }
 
 // If we're the server, initialize a new server room and start listening for connections.

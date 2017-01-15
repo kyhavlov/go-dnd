@@ -144,10 +144,10 @@ func roomIsValid(room *RoomNode, rooms []*RoomNode) bool {
 }
 
 type Map struct {
-	Tiles []*structs.Tile
+	Tiles     []*structs.Tile
 	Creatures []*structs.Creature
-	Width int
-	Height int
+	Width     int
+	Height    int
 }
 
 // Generates a map from a seed number
@@ -280,7 +280,7 @@ func GenerateMap(seed int64) *Map {
 
 	// Initialize the map
 	level := &Map{
-		Width: maxPoint.X - offset.X,
+		Width:  maxPoint.X - offset.X,
 		Height: maxPoint.Y - offset.Y,
 	}
 

@@ -53,23 +53,36 @@ func (input *InputSystem) Update(dt float32) {
 			Y: int(input.mouseTracker.MouseComponent.MouseY / structs.TileWidth),
 		}
 
-		// If the target is a pathable, unoccupied square, try to move there
-		if input.mapSystem.GetTileAt(gridPoint) != nil && input.move.GetCreatureAt(gridPoint) == nil {
-			start := input.mapSystem.GetTileAt(structs.PointToGridPoint(input.player.SpaceComponent.Position))
-			path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles, input.move.CreatureLocations, true)
-
-			if len(path) < 17 {
+		// If the target is occupied by an enemy, try to attack
+		if input.mapSystem.GetTileAt(gridPoint) != nil {
+			target := input.move.GetCreatureAt(gridPoint)
+			if target != nil && !target.IsPlayerTeam {
 				input.outgoing <- NetworkMessage{
 					Events: []Event{&PlayerAction{
 						PlayerID: input.PlayerID,
-						Action: &MoveEvent{
-							Id:   input.player.NetworkID,
-							Path: path,
+						Action: &Attack{
+							Id:       input.player.NetworkID,
+							TargetId: target.NetworkID,
 						},
 					}},
 				}
 			} else {
-				log.Info("Tried to move too far")
+				start := input.mapSystem.GetTileAt(structs.PointToGridPoint(input.player.SpaceComponent.Position))
+				path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles, input.move.CreatureLocations, true)
+
+				if len(path) < 17 {
+					input.outgoing <- NetworkMessage{
+						Events: []Event{&PlayerAction{
+							PlayerID: input.PlayerID,
+							Action: &Move{
+								Id:   input.player.NetworkID,
+								Path: path,
+							},
+						}},
+					}
+				} else {
+					log.Info("Tried to move too far")
+				}
 			}
 		}
 	}
