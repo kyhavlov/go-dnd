@@ -20,6 +20,8 @@ type Creature struct {
 	HealthComponent
 	common.SpaceComponent
 	common.RenderComponent
+
+	IsPlayerTeam bool
 }
 
 type HealthComponent struct {

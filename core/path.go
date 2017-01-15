@@ -7,7 +7,7 @@ import (
 
 // Standard A* implementation for finding a shortest path between two map tiles.
 // Comments stolen from wikipedia article on A*: https://en.wikipedia.org/wiki/A*_search_algorithm
-func GetPath(start, goal *structs.Tile, tiles [][]*structs.Tile) []structs.GridPoint {
+func GetPath(start, goal *structs.Tile, tiles [][]*structs.Tile, creatures [][]*structs.Creature, playerTeam bool) []structs.GridPoint {
 	// The set of nodes already evaluated
 	closedSet := make(map[*structs.Tile]bool)
 	// The set of currently discovered nodes still to be evaluated.
@@ -66,7 +66,7 @@ func GetPath(start, goal *structs.Tile, tiles [][]*structs.Tile) []structs.GridP
 		closedSet[current] = true
 
 		// Evaluate adjacent tiles to the current one
-		for _, neighbor := range getNeighbors(current, tiles) {
+		for _, neighbor := range getNeighbors(current, tiles, creatures, playerTeam) {
 			// Ignore the neighbors which are already evaluated.
 			if _, ok := closedSet[neighbor]; ok {
 				continue
@@ -99,22 +99,26 @@ func getEstimatedDistance(a, b *structs.Tile) int {
 }
 
 // TODO: re-use the neighbors slice instead of allocating a new one every time we call this
-func getNeighbors(tile *structs.Tile, tiles [][]*structs.Tile) []*structs.Tile {
+func getNeighbors(tile *structs.Tile, tiles [][]*structs.Tile, creatures [][]*structs.Creature, playerTeam bool) []*structs.Tile {
 	neighbors := make([]*structs.Tile, 0)
 
-	if tile.X > 0 && tiles[tile.X-1][tile.Y] != nil {
+	sameTeam := func(x, y int) bool {
+		return creatures[x][y] == nil || creatures[x][y].IsPlayerTeam == playerTeam
+	}
+
+	if tile.X > 0 && tiles[tile.X-1][tile.Y] != nil && sameTeam(tile.X-1, tile.Y) {
 		neighbors = append(neighbors, tiles[tile.X-1][tile.Y])
 	}
 
-	if tile.X < len(tiles)-1 && tiles[tile.X+1][tile.Y] != nil {
+	if tile.X < len(tiles)-1 && tiles[tile.X+1][tile.Y] != nil && sameTeam(tile.X+1, tile.Y) {
 		neighbors = append(neighbors, tiles[tile.X+1][tile.Y])
 	}
 
-	if tile.Y > 0 && tiles[tile.X][tile.Y-1] != nil {
+	if tile.Y > 0 && tiles[tile.X][tile.Y-1] != nil && sameTeam(tile.X, tile.Y-1) {
 		neighbors = append(neighbors, tiles[tile.X][tile.Y-1])
 	}
 
-	if tile.Y < len(tiles[0])-1 && tiles[tile.X][tile.Y+1] != nil {
+	if tile.Y < len(tiles[0])-1 && tiles[tile.X][tile.Y+1] != nil && sameTeam(tile.X, tile.Y+1) {
 		neighbors = append(neighbors, tiles[tile.X][tile.Y+1])
 	}
 

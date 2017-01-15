@@ -53,6 +53,11 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 			for i, _ := range sys.Tiles {
 				sys.Tiles[i] = make([]*structs.Tile, level.Height)
 			}
+		case *MoveSystem:
+			sys.CreatureLocations = make([][]*structs.Creature, level.Width)
+			for i, _ := range sys.CreatureLocations {
+				sys.CreatureLocations[i] = make([]*structs.Creature, level.Height)
+			}
 		}
 	}
 	for _, tile := range level.Tiles {
@@ -93,6 +98,7 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 
 	player := structs.Creature{
 		BasicEntity: ecs.NewBasic(),
+		IsPlayerTeam: true,
 	}
 	player.SpaceComponent = common.SpaceComponent{
 		Position: event.GridPoint.ToPixels(),
@@ -105,19 +111,10 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 	}
 	player.RenderComponent.SetZIndex(100)
 
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *NetworkSystem:
-			player.NetworkID = sys.nextId()
-		}
-	}
+	AddCreature(w, &player)
 
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
-		case *common.RenderSystem:
-			sys.Add(&player.BasicEntity, &player.RenderComponent, &player.SpaceComponent)
-		case *MoveSystem:
-			sys.Add(&player.BasicEntity, &player.SpaceComponent, player.NetworkID)
 		case *InputSystem:
 			if sys.PlayerID == event.PlayerID {
 				sys.player = &player
@@ -185,7 +182,6 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 
 type PlayerReady struct {
 	PlayerID
-	Ready bool
 }
 
 func (p *PlayerReady) Process(w *ecs.World, dt float32) bool {
@@ -193,7 +189,7 @@ func (p *PlayerReady) Process(w *ecs.World, dt float32) bool {
 		switch sys := system.(type) {
 		case *TurnSystem:
 			//log.Debugf("Setting ready to %v for player %d", p.Ready, p.PlayerID)
-			sys.PlayerReady[p.PlayerID] = p.Ready
+			sys.PlayerReady[p.PlayerID] = !sys.PlayerReady[p.PlayerID]
 		}
 	}
 	return true

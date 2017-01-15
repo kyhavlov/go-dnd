@@ -18,6 +18,7 @@ type InputSystem struct {
 	mouseTracker MouseTracker
 	mapSystem    *MapSystem
 	turn         *TurnSystem
+	move         *MoveSystem
 
 	player *structs.Creature
 	PlayerID
@@ -46,15 +47,16 @@ func (input *InputSystem) New(w *ecs.World) {
 }
 
 func (input *InputSystem) Update(dt float32) {
-	if input.mouseTracker.MouseComponent.Clicked && input.player != nil && input.turn.PlayersTurn {
+	if input.mouseTracker.MouseComponent.Clicked && input.player != nil && input.turn.PlayersTurn && !input.turn.PlayerReady[input.PlayerID] {
 		gridPoint := structs.GridPoint{
 			X: int(input.mouseTracker.MouseComponent.MouseX / structs.TileWidth),
 			Y: int(input.mouseTracker.MouseComponent.MouseY / structs.TileWidth),
 		}
 
-		if input.mapSystem.GetTileAt(gridPoint) != nil {
+		// If the target is a pathable, unoccupied square, try to move there
+		if input.mapSystem.GetTileAt(gridPoint) != nil && input.move.GetCreatureAt(gridPoint) == nil {
 			start := input.mapSystem.GetTileAt(structs.PointToGridPoint(input.player.SpaceComponent.Position))
-			path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles)
+			path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles, input.move.CreatureLocations, true)
 
 			if len(path) < 17 {
 				input.outgoing <- NetworkMessage{
@@ -76,7 +78,6 @@ func (input *InputSystem) Update(dt float32) {
 		input.outgoing <- NetworkMessage{
 			Events: []Event{&PlayerReady{
 				PlayerID: input.PlayerID,
-				Ready:    true,
 			}},
 		}
 	}

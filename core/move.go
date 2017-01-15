@@ -11,12 +11,16 @@ import (
 type MoveSystem struct {
 	networkIds      map[*ecs.BasicEntity]structs.NetworkID
 	SpaceComponents map[structs.NetworkID]*common.SpaceComponent
+
+	Creatures map[structs.NetworkID]*structs.Creature
+	CreatureLocations [][]*structs.Creature
 }
 
 // New is the initialisation of the System
 func (ms *MoveSystem) New(w *ecs.World) {
 	ms.networkIds = make(map[*ecs.BasicEntity]structs.NetworkID)
 	ms.SpaceComponents = make(map[structs.NetworkID]*common.SpaceComponent)
+	ms.Creatures = make(map[structs.NetworkID]*structs.Creature)
 }
 
 func (ms *MoveSystem) Update(dt float32) {}
@@ -24,6 +28,18 @@ func (ms *MoveSystem) Update(dt float32) {}
 func (ms *MoveSystem) Add(entity *ecs.BasicEntity, space *common.SpaceComponent, nid structs.NetworkID) {
 	ms.SpaceComponents[nid] = space
 	ms.networkIds[entity] = nid
+}
+
+func (ms *MoveSystem) AddCreature(creature *structs.Creature) {
+	ms.SpaceComponents[creature.NetworkID] = &creature.SpaceComponent
+	ms.networkIds[&creature.BasicEntity] = creature.NetworkID
+	gridPoint := structs.PointToGridPoint(creature.Position)
+	ms.CreatureLocations[gridPoint.X][gridPoint.Y] = creature
+	ms.Creatures[creature.NetworkID] = creature
+}
+
+func (ms *MoveSystem) GetCreatureAt(point structs.GridPoint) *structs.Creature {
+	return ms.CreatureLocations[point.X][point.Y]
 }
 
 func (ms *MoveSystem) Remove(entity ecs.BasicEntity) {
@@ -64,6 +80,13 @@ func (move *MoveEvent) Process(w *ecs.World, dt float32) bool {
 				current.Y = target.Y
 				move.current++
 				if move.current == len(move.Path) {
+					// Move the mapping to the new location
+					creature, ok := sys.Creatures[move.Id]
+					if ok {
+						sys.CreatureLocations[move.Path[0].X][move.Path[0].Y] = nil
+						sys.CreatureLocations[move.Path[move.current-1].X][move.Path[move.current-1].Y] = creature
+					}
+
 					return true
 				}
 			} else {

@@ -19,7 +19,7 @@ func AddCreature(w *ecs.World, creature *structs.Creature) {
 		case *common.RenderSystem:
 			sys.Add(&creature.BasicEntity, &creature.RenderComponent, &creature.SpaceComponent)
 		case *MoveSystem:
-			sys.Add(&creature.BasicEntity, &creature.SpaceComponent, creature.NetworkID)
+			sys.AddCreature(creature)
 		case *HealthSystem:
 			sys.Add(&creature.BasicEntity, &creature.HealthComponent)
 		}
