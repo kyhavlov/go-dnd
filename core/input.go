@@ -47,6 +47,7 @@ func (input *InputSystem) New(w *ecs.World) {
 }
 
 func (input *InputSystem) Update(dt float32) {
+	// One of three things can happen on left click: move, attack or pick up item
 	if input.mouseTracker.MouseComponent.Clicked && input.player != nil && input.turn.PlayersTurn && !input.turn.PlayerReady[input.PlayerID] {
 		gridPoint := structs.GridPoint{
 			X: int(input.mouseTracker.MouseComponent.MouseX / structs.TileWidth),
@@ -55,8 +56,7 @@ func (input *InputSystem) Update(dt float32) {
 
 		// If the target is occupied by an enemy, try to attack
 		if input.mapSystem.GetTileAt(gridPoint) != nil {
-			target := input.move.GetCreatureAt(gridPoint)
-			if target != nil && !target.IsPlayerTeam {
+			if target := input.move.GetCreatureAt(gridPoint); target != nil && !target.IsPlayerTeam {
 				input.outgoing <- NetworkMessage{
 					Events: []Event{&PlayerAction{
 						PlayerID: input.PlayerID,
@@ -67,21 +67,33 @@ func (input *InputSystem) Update(dt float32) {
 					}},
 				}
 			} else {
-				start := input.mapSystem.GetTileAt(structs.PointToGridPoint(input.player.SpaceComponent.Position))
-				path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles, input.move.CreatureLocations, true)
-
-				if len(path) < 17 {
+				if item := input.move.GetItemAt(gridPoint); item != nil && item.OnGround {
 					input.outgoing <- NetworkMessage{
 						Events: []Event{&PlayerAction{
 							PlayerID: input.PlayerID,
-							Action: &Move{
-								Id:   input.player.NetworkID,
-								Path: path,
+							Action: &PickupItem{
+								ItemId:       item.NetworkID,
+								CreatureId:   input.player.NetworkID,
 							},
 						}},
 					}
 				} else {
-					log.Info("Tried to move too far")
+					start := input.mapSystem.GetTileAt(structs.PointToGridPoint(input.player.SpaceComponent.Position))
+					path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles, input.move.CreatureLocations, true)
+
+					if len(path) < 17 {
+						input.outgoing <- NetworkMessage{
+							Events: []Event{&PlayerAction{
+								PlayerID: input.PlayerID,
+								Action: &Move{
+									Id:   input.player.NetworkID,
+									Path: path,
+								},
+							}},
+						}
+					} else {
+						log.Info("Tried to move too far")
+					}
 				}
 			}
 		}

@@ -339,7 +339,7 @@ func GenerateMap(seed int64) *Map {
 					Scale:    engo.Point{1, 1},
 				}
 				creature.HealthComponent = structs.HealthComponent{
-					Life: 40,
+					MaxLife: 40,
 				}
 				level.Creatures = append(level.Creatures, &creature)
 			}
@@ -362,6 +362,7 @@ func newTile(sheet *common.Spritesheet, coords structs.GridPoint, sprite int) *s
 		Color:    color.Alpha{structs.MIN_BRIGHTNESS},
 		Scale:    engo.Point{1, 1},
 	}
+	tile.RenderComponent.SetZIndex(-100)
 	tile.GridPoint = coords
 
 	return &tile

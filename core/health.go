@@ -24,6 +24,7 @@ func (hs *HealthSystem) Update(dt float32) {
 }
 
 func (hs *HealthSystem) Add(e ecs.BasicEntity, health *structs.HealthComponent) {
+	health.Life = health.MaxLife
 	hs.healths[e] = health
 }
 

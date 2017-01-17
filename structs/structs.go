@@ -2,31 +2,62 @@ package structs
 
 import (
 	"engo.io/ecs"
-	"engo.io/engo/common"
 	"engo.io/engo"
+	"engo.io/engo/common"
 	"github.com/engoengine/math/imath"
 )
 
 const SpritesheetPath = "textures/dungeon2x.png"
 const TileWidth = 64
 
-const MIN_BRIGHTNESS = 150
+const MIN_BRIGHTNESS = 80
+const INVENTORY_SIZE = 5
 
 type NetworkID uint64
 
 type Creature struct {
 	ecs.BasicEntity
 	NetworkID
-	HealthComponent
 	common.SpaceComponent
 	common.RenderComponent
+
+	HealthComponent
+	StatComponent
+
+	Inventory [INVENTORY_SIZE]*Item
 
 	IsPlayerTeam bool
 }
 
 type HealthComponent struct {
-	Life int
-	Dead bool
+	MaxLife int
+	Life    int
+	Dead    bool
+}
+
+type StatComponent struct {
+	Strength     int
+	Dexterity    int
+	Intelligence int
+	Stamina      int
+}
+
+type Item struct {
+	ecs.BasicEntity
+	NetworkID
+	common.SpaceComponent
+	common.RenderComponent
+
+	OnGround  bool
+
+	Life      int
+
+	StrengthBonus     int
+	DexterityBonus    int
+	IntelligenceBonus int
+
+	StaminaBonus      int
+	StaminaRegenBonus int
 }
 
 // GridPoint refers to a specific tile's coordinates; incrementing X by 1

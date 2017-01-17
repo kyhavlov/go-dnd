@@ -24,12 +24,12 @@ func RegisterEvents() {
 	gob.Register(&GameStart{})
 	gob.Register(&SetPlayerID{})
 	gob.Register(&NewPlayer{})
-	gob.Register(&Move{})
-	gob.Register(&Attack{})
 	gob.Register(&PlayerAction{})
 	gob.Register(&PlayerReady{})
 	gob.Register(&TurnChange{})
-
+	gob.Register(&Move{})
+	gob.Register(&Attack{})
+	gob.Register(&PickupItem{})
 }
 
 // Starts the game, generating the map from the given seed
@@ -59,6 +59,10 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 			for i, _ := range sys.CreatureLocations {
 				sys.CreatureLocations[i] = make([]*structs.Creature, level.Height)
 			}
+			sys.ItemLocations = make([][]*structs.Item, level.Width)
+			for i, _ := range sys.ItemLocations {
+				sys.ItemLocations[i] = make([]*structs.Item, level.Height)
+			}
 		}
 	}
 	for _, tile := range level.Tiles {
@@ -67,6 +71,46 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 	for _, creature := range level.Creatures {
 		AddCreature(w, creature)
 	}
+
+	// Make a test item
+	sheet := common.NewSpritesheetFromFile(structs.SpritesheetPath, structs.TileWidth, structs.TileWidth)
+	if sheet == nil {
+		log.Fatalf("Unable to load texture file")
+	}
+	coords := structs.GridPoint{
+		X: 7,
+		Y: 3,
+	}
+	item := structs.Item{
+		Life: 20,
+		OnGround: true,
+	}
+	item.BasicEntity = ecs.NewBasic()
+	item.SpaceComponent = common.SpaceComponent{
+		Position: coords.ToPixels(),
+		Width:    structs.TileWidth,
+		Height:   structs.TileWidth,
+	}
+	item.RenderComponent = common.RenderComponent{
+		Drawable: sheet.Cell(1378),
+	}
+
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *NetworkSystem:
+			item.NetworkID = sys.nextId()
+		}
+	}
+
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *common.RenderSystem:
+			sys.Add(&item.BasicEntity, &item.RenderComponent, &item.SpaceComponent)
+		case *MoveSystem:
+			sys.AddItem(&item)
+		}
+	}
+
 	return true
 }
 
@@ -102,7 +146,7 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 		IsPlayerTeam: true,
 	}
 	player.HealthComponent = structs.HealthComponent{
-		Life: 50,
+		MaxLife: 50,
 	}
 	player.SpaceComponent = common.SpaceComponent{
 		Position: event.GridPoint.ToPixels(),
@@ -111,9 +155,8 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 	}
 	player.RenderComponent = common.RenderComponent{
 		Drawable: sheet.Cell(594 + int(event.PlayerID)),
-		Scale:    engo.Point{1, 1},
 	}
-	player.RenderComponent.SetZIndex(100)
+	player.RenderComponent.SetZIndex(1)
 
 	AddCreature(w, &player)
 
@@ -176,17 +219,25 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 					} else {
 						h = structs.TileWidth
 					}
-					line.SpaceComponent = common.SpaceComponent{Position: engo.Point{start.X + structs.TileWidth/2, start.Y + structs.TileWidth/2}, Width: w, Height: h}
-					line.RenderComponent = common.RenderComponent{Drawable: common.Rectangle{}, Color: color.RGBA{0, 255, 0, 255}}
+					offset := -4 + float32(p.PlayerID * 5)
+					line.SpaceComponent = common.SpaceComponent{Position: engo.Point{start.X + structs.TileWidth/2 + offset, start.Y + structs.TileWidth/2 + offset}, Width: w, Height: h}
+					line.RenderComponent = common.RenderComponent{Drawable: common.Rectangle{}, Color: color.RGBA{0, 255, 0 + uint8(p.PlayerID*255), 255}}
 					lines = append(lines, &line)
 				}
 				sys.UpdateActionIndicator(p.PlayerID, lines)
 			case *Attack:
-				target := move.Creatures[action.TargetId].Position
 				circle := &UiElement{BasicEntity: ecs.NewBasic()}
-				circle.SpaceComponent = common.SpaceComponent{Position: target, Width: structs.TileWidth, Height: structs.TileWidth}
+				circle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[action.TargetId].Position, Width: structs.TileWidth, Height: structs.TileWidth}
 				circle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
 				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{circle})
+			case *PickupItem:
+				itemCircle := &UiElement{BasicEntity: ecs.NewBasic()}
+				itemCircle.SpaceComponent = common.SpaceComponent{Position: move.Items[action.ItemId].Position, Width: structs.TileWidth, Height: structs.TileWidth}
+				itemCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{0, 255, 0, 255}}, Color: color.Transparent}
+				creatureCircle := &UiElement{BasicEntity: ecs.NewBasic()}
+				creatureCircle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[action.CreatureId].Position, Width: structs.TileWidth, Height: structs.TileWidth}
+				creatureCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{0, 255, 0, 255}}, Color: color.Transparent}
+				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{itemCircle, creatureCircle})
 			}
 		}
 	}
@@ -218,6 +269,35 @@ func (t *TurnChange) Process(w *ecs.World, dt float32) bool {
 		case *TurnSystem:
 			log.Infof("Setting turn back to players")
 			sys.PlayersTurn = t.PlayersTurn
+		}
+	}
+	return true
+}
+
+type PickupItem struct {
+	ItemId     structs.NetworkID
+	CreatureId structs.NetworkID
+}
+
+func (p *PickupItem) Process(w *ecs.World, dt float32) bool {
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *MoveSystem:
+			item := sys.Items[p.ItemId]
+			creature := sys.Creatures[p.CreatureId]
+			// put the item in the first empty inventory slot
+			for i, slot := range creature.Inventory {
+				if slot == nil {
+					creature.Inventory[i] = item
+					break
+				}
+			}
+			item.RenderComponent.Hidden = true
+			item.OnGround = false
+		case *UiSystem:
+			if p.CreatureId == sys.input.player.NetworkID {
+				sys.UpdateInventoryDisplay()
+			}
 		}
 	}
 	return true
