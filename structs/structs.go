@@ -10,8 +10,8 @@ import (
 const SpritesheetPath = "textures/dungeon2x.png"
 const TileWidth = 64
 
-const MIN_BRIGHTNESS = 80
-const INVENTORY_SIZE = 5
+const MinBrightness = 80
+const InventorySize = 5
 
 type NetworkID uint64
 
@@ -24,7 +24,7 @@ type Creature struct {
 	HealthComponent
 	StatComponent
 
-	Inventory [INVENTORY_SIZE]*Item
+	Inventory [InventorySize]*Item
 
 	IsPlayerTeam bool
 }
@@ -48,9 +48,9 @@ type Item struct {
 	common.SpaceComponent
 	common.RenderComponent
 
-	OnGround  bool
+	OnGround bool
 
-	Life      int
+	Life int
 
 	StrengthBonus     int
 	DexterityBonus    int

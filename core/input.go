@@ -72,8 +72,8 @@ func (input *InputSystem) Update(dt float32) {
 						Events: []Event{&PlayerAction{
 							PlayerID: input.PlayerID,
 							Action: &PickupItem{
-								ItemId:       item.NetworkID,
-								CreatureId:   input.player.NetworkID,
+								ItemId:     item.NetworkID,
+								CreatureId: input.player.NetworkID,
 							},
 						}},
 					}

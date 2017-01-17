@@ -359,7 +359,7 @@ func newTile(sheet *common.Spritesheet, coords structs.GridPoint, sprite int) *s
 	}
 	tile.RenderComponent = common.RenderComponent{
 		Drawable: sheet.Cell(sprite),
-		Color:    color.Alpha{structs.MIN_BRIGHTNESS},
+		Color:    color.Alpha{structs.MinBrightness},
 		Scale:    engo.Point{1, 1},
 	}
 	tile.RenderComponent.SetZIndex(-100)

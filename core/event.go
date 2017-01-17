@@ -82,7 +82,7 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 		Y: 3,
 	}
 	item := structs.Item{
-		Life: 20,
+		Life:     20,
 		OnGround: true,
 	}
 	item.BasicEntity = ecs.NewBasic()
@@ -219,7 +219,7 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 					} else {
 						h = structs.TileWidth
 					}
-					offset := -4 + float32(p.PlayerID * 5)
+					offset := -4 + float32(p.PlayerID*5)
 					line.SpaceComponent = common.SpaceComponent{Position: engo.Point{start.X + structs.TileWidth/2 + offset, start.Y + structs.TileWidth/2 + offset}, Width: w, Height: h}
 					line.RenderComponent = common.RenderComponent{Drawable: common.Rectangle{}, Color: color.RGBA{0, 255, 0 + uint8(p.PlayerID*255), 255}}
 					lines = append(lines, &line)

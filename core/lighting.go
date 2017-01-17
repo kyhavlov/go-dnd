@@ -71,7 +71,7 @@ func (ls *LightSystem) Update(dt float32) {
 		for _, row := range ls.mapSystem.Tiles {
 			for _, tile := range row {
 				if tile != nil {
-					tile.Color = color.Alpha{structs.MIN_BRIGHTNESS}
+					tile.Color = color.Alpha{structs.MinBrightness}
 				}
 			}
 		}
@@ -79,7 +79,7 @@ func (ls *LightSystem) Update(dt float32) {
 		// Increase the light of the tiles around the source in a diamond pattern,
 		// with the light strength fading with distance from the source.
 		for _, light := range ls.lights {
-			radius := int((light.GetBrightness()-structs.MIN_BRIGHTNESS)/LIGHT_DECREASE) + 1
+			radius := int((light.GetBrightness()-structs.MinBrightness)/LIGHT_DECREASE) + 1
 			//log.Infof("radius: %d", radius)
 			for i := 0; i <= radius*2; i++ {
 				current := light.GetLocation()
