@@ -19,7 +19,7 @@ func AddCreature(w *ecs.World, creature *structs.Creature) {
 		switch sys := system.(type) {
 		case *common.RenderSystem:
 			sys.Add(&creature.BasicEntity, &creature.RenderComponent, &creature.SpaceComponent)
-		case *MoveSystem:
+		case *MapSystem:
 			sys.AddCreature(creature)
 		case *HealthSystem:
 			sys.Add(creature.BasicEntity, &creature.HealthComponent)
@@ -36,7 +36,7 @@ func (attack *Attack) Process(w *ecs.World, dt float32) bool {
 	var creature *structs.Creature
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
-		case *MoveSystem:
+		case *MapSystem:
 			creature = sys.Creatures[attack.TargetId]
 			creature.Life -= 20
 			log.Infof("Creature id %d took %d damage, at %d life now", attack.TargetId, 20, creature.Life)

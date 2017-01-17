@@ -43,12 +43,10 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 
 	mapSystem := &MapSystem{}
 	turn := &TurnSystem{}
-	move := &MoveSystem{}
 	input := &InputSystem{
 		mapSystem: mapSystem,
 		outgoing:  scene.outgoing,
 		turn:      turn,
-		move:      move,
 	}
 
 	ui := &UiSystem{
@@ -78,7 +76,6 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 
 	// Add the game logic systems (event/move/network/map)
 	world.AddSystem(event)
-	world.AddSystem(move)
 	world.AddSystem(&NetworkSystem{})
 	world.AddSystem(mapSystem)
 	world.AddSystem(&LightSystem{})

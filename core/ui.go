@@ -108,6 +108,7 @@ func (us *UiSystem) UpdateInventoryDisplay() {
 		component := common.RenderComponent{Drawable: inventory[i].Drawable}
 		component.SetShader(common.HUDShader)
 		component.SetZIndex(3)
+		log.Infof("Adding inventory item display")
 		us.render.Add(&entity, &component, us.inventoryFrames[i])
 	}
 }
@@ -136,7 +137,7 @@ func (us *UiSystem) InitUI(w *ecs.World, playerCount int) {
 func (us *UiSystem) setupInventoryDisplay(font *common.Font) {
 	for i := 0; i < structs.InventorySize; i++ {
 		itemFrame := UiElement{BasicEntity: ecs.NewBasic()}
-		itemFrame.SpaceComponent = common.SpaceComponent{Position: engo.Point{float32(64+64*i) + 4, 700 + 4}, Width: structs.TileWidth, Height: structs.TileWidth}
+		itemFrame.SpaceComponent = common.SpaceComponent{Position: engo.Point{float32(24+64*i) + 4, 700 + 4}, Width: structs.TileWidth, Height: structs.TileWidth}
 		itemFrame.RenderComponent = common.RenderComponent{Drawable: common.Rectangle{BorderWidth: 2, BorderColor: color.White}, Color: color.RGBA{200, 153, 0, 125}}
 		itemFrame.SetShader(common.HUDShader)
 		itemFrame.RenderComponent.SetZIndex(2)
@@ -144,7 +145,7 @@ func (us *UiSystem) setupInventoryDisplay(font *common.Font) {
 		us.render.Add(&itemFrame.BasicEntity, &itemFrame.RenderComponent, &itemFrame.SpaceComponent)
 
 		hotkey := UiElement{BasicEntity: ecs.NewBasic()}
-		hotkey.SpaceComponent = common.SpaceComponent{Position: engo.Point{float32(64+64*i) + 4, 700 + 7}, Width: structs.TileWidth, Height: structs.TileWidth}
+		hotkey.SpaceComponent = common.SpaceComponent{Position: engo.Point{float32(24+64*i) + 4, 700 + 7}, Width: structs.TileWidth, Height: structs.TileWidth}
 		hotkey.RenderComponent = common.RenderComponent{Drawable: common.Text{Font: font, Text: string(InventoryHotkeys[i])}, Color: color.White}
 		hotkey.SetShader(common.HUDShader)
 		hotkey.RenderComponent.SetZIndex(4)

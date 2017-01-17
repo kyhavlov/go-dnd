@@ -18,7 +18,6 @@ type InputSystem struct {
 	mouseTracker MouseTracker
 	mapSystem    *MapSystem
 	turn         *TurnSystem
-	move         *MoveSystem
 
 	player *structs.Creature
 	PlayerID
@@ -56,7 +55,7 @@ func (input *InputSystem) Update(dt float32) {
 
 		// If the target is occupied by an enemy, try to attack
 		if input.mapSystem.GetTileAt(gridPoint) != nil {
-			if target := input.move.GetCreatureAt(gridPoint); target != nil && !target.IsPlayerTeam {
+			if target := input.mapSystem.GetCreatureAt(gridPoint); target != nil && !target.IsPlayerTeam {
 				input.outgoing <- NetworkMessage{
 					Events: []Event{&PlayerAction{
 						PlayerID: input.PlayerID,
@@ -67,7 +66,7 @@ func (input *InputSystem) Update(dt float32) {
 					}},
 				}
 			} else {
-				if item := input.move.GetItemAt(gridPoint); item != nil && item.OnGround {
+				if item := input.mapSystem.GetItemAt(gridPoint); item != nil && item.OnGround {
 					input.outgoing <- NetworkMessage{
 						Events: []Event{&PlayerAction{
 							PlayerID: input.PlayerID,
@@ -79,7 +78,7 @@ func (input *InputSystem) Update(dt float32) {
 					}
 				} else {
 					start := input.mapSystem.GetTileAt(structs.PointToGridPoint(input.player.SpaceComponent.Position))
-					path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles, input.move.CreatureLocations, true)
+					path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles, input.mapSystem.CreatureLocations, true)
 
 					if len(path) < 17 {
 						input.outgoing <- NetworkMessage{

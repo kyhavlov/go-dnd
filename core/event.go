@@ -6,6 +6,7 @@ import (
 	"engo.io/engo"
 	"engo.io/engo/common"
 	log "github.com/Sirupsen/logrus"
+	"github.com/engoengine/math"
 	"github.com/kyhavlov/go-dnd/mapgen"
 	"github.com/kyhavlov/go-dnd/structs"
 	"image/color"
@@ -54,7 +55,6 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 			for i, _ := range sys.Tiles {
 				sys.Tiles[i] = make([]*structs.Tile, level.Height)
 			}
-		case *MoveSystem:
 			sys.CreatureLocations = make([][]*structs.Creature, level.Width)
 			for i, _ := range sys.CreatureLocations {
 				sys.CreatureLocations[i] = make([]*structs.Creature, level.Height)
@@ -65,6 +65,7 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 			}
 		}
 	}
+
 	for _, tile := range level.Tiles {
 		AddTile(w, tile)
 	}
@@ -77,22 +78,25 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 	if sheet == nil {
 		log.Fatalf("Unable to load texture file")
 	}
-	coords := structs.GridPoint{
+	c := structs.GridPoint{
 		X: 7,
 		Y: 3,
 	}
+	pixelCoords := c.ToPixels()
+	pixelCoords.Add(engo.Point{structs.TileWidth / 4, structs.TileWidth / 4})
 	item := structs.Item{
 		Life:     20,
 		OnGround: true,
 	}
 	item.BasicEntity = ecs.NewBasic()
 	item.SpaceComponent = common.SpaceComponent{
-		Position: coords.ToPixels(),
+		Position: pixelCoords,
 		Width:    structs.TileWidth,
 		Height:   structs.TileWidth,
 	}
 	item.RenderComponent = common.RenderComponent{
 		Drawable: sheet.Cell(1378),
+		Scale:    engo.Point{0.5, 0.5},
 	}
 
 	for _, system := range w.Systems() {
@@ -106,7 +110,7 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 		switch sys := system.(type) {
 		case *common.RenderSystem:
 			sys.Add(&item.BasicEntity, &item.RenderComponent, &item.SpaceComponent)
-		case *MoveSystem:
+		case *MapSystem:
 			sys.AddItem(&item)
 		}
 	}
@@ -188,13 +192,13 @@ type PlayerAction struct {
 }
 
 func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
-	var move *MoveSystem
+	var move *MapSystem
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *TurnSystem:
 			//log.Debugf("Setting action %v for player %d", reflect.TypeOf(p.Action), p.PlayerID)
 			sys.PlayerActions[p.PlayerID] = &p.Action
-		case *MoveSystem:
+		case *MapSystem:
 			move = sys
 		}
 	}
@@ -232,7 +236,9 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{circle})
 			case *PickupItem:
 				itemCircle := &UiElement{BasicEntity: ecs.NewBasic()}
-				itemCircle.SpaceComponent = common.SpaceComponent{Position: move.Items[action.ItemId].Position, Width: structs.TileWidth, Height: structs.TileWidth}
+				itemCircle.SpaceComponent = common.SpaceComponent{Width: structs.TileWidth, Height: structs.TileWidth}
+				itemCircle.SpaceComponent.Position.X = move.Items[action.ItemId].Position.X - structs.TileWidth/4
+				itemCircle.SpaceComponent.Position.Y = move.Items[action.ItemId].Position.Y - structs.TileWidth/4
 				itemCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{0, 255, 0, 255}}, Color: color.Transparent}
 				creatureCircle := &UiElement{BasicEntity: ecs.NewBasic()}
 				creatureCircle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[action.CreatureId].Position, Width: structs.TileWidth, Height: structs.TileWidth}
@@ -274,6 +280,78 @@ func (t *TurnChange) Process(w *ecs.World, dt float32) bool {
 	return true
 }
 
+// Moves the entity with the given Id along the path
+type Move struct {
+	Id   structs.NetworkID
+	Path []structs.GridPoint
+
+	// Tracks the node of the path we're currently moving towards
+	// private field so we don't send it over the network
+	current int
+}
+
+// Pixels per frame to move entities
+const speed = 3
+
+func (move *Move) Process(w *ecs.World, dt float32) bool {
+	var lights *LightSystem
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *LightSystem:
+			lights = sys
+		}
+	}
+
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *MapSystem:
+			// Check if the path needs to be ended early because of an occupying creature
+			last := 0
+			for i := len(move.Path) - 1; i > 0; i-- {
+				if sys.GetCreatureAt(move.Path[i]) == nil {
+					last = i
+					break
+				}
+			}
+			if last == 0 {
+				return true
+			}
+			move.Path = move.Path[:last+1]
+
+			current := &sys.SpaceComponents[move.Id].Position
+			target := move.Path[move.current].ToPixels()
+			if current.PointDistance(target) <= 3.0 {
+				lights.needsUpdate = true
+				current.X = target.X
+				current.Y = target.Y
+				move.current++
+				if move.current == len(move.Path) {
+					// Move the mapping to the new location
+					creature, ok := sys.Creatures[move.Id]
+					if ok {
+						sys.CreatureLocations[move.Path[0].X][move.Path[0].Y] = nil
+						sys.CreatureLocations[move.Path[move.current-1].X][move.Path[move.current-1].Y] = creature
+					}
+
+					return true
+				}
+			} else {
+				xDiff, yDiff := math.Abs(current.X-target.X), math.Abs(current.Y-target.Y)
+				if xDiff != 0 {
+					directionX := (current.X - target.X) / xDiff
+					current.X -= speed * directionX
+				}
+				if yDiff != 0 {
+					directionY := (current.Y - target.Y) / yDiff
+					current.Y -= speed * directionY
+				}
+			}
+		}
+	}
+
+	return false
+}
+
 type PickupItem struct {
 	ItemId     structs.NetworkID
 	CreatureId structs.NetworkID
@@ -282,7 +360,7 @@ type PickupItem struct {
 func (p *PickupItem) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
-		case *MoveSystem:
+		case *MapSystem:
 			item := sys.Items[p.ItemId]
 			creature := sys.Creatures[p.CreatureId]
 			// put the item in the first empty inventory slot
@@ -292,10 +370,17 @@ func (p *PickupItem) Process(w *ecs.World, dt float32) bool {
 					break
 				}
 			}
+			log.Infof("Inventory: %v", creature.Inventory)
 			item.RenderComponent.Hidden = true
 			item.OnGround = false
+		}
+	}
+
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
 		case *UiSystem:
 			if p.CreatureId == sys.input.player.NetworkID {
+				log.Info("updating inv ui")
 				sys.UpdateInventoryDisplay()
 			}
 		}
