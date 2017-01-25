@@ -31,6 +31,8 @@ func RegisterEvents() {
 	gob.Register(&Move{})
 	gob.Register(&Attack{})
 	gob.Register(&PickupItem{})
+	gob.Register(&EquipItem{})
+	gob.Register(&UnequipItem{})
 }
 
 // Starts the game, generating the map from the given seed
@@ -86,6 +88,7 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 	pixelCoords.Add(engo.Point{structs.TileWidth / 4, structs.TileWidth / 4})
 	item := structs.Item{
 		Life:     20,
+		Type:     structs.Armor,
 		OnGround: true,
 	}
 	item.BasicEntity = ecs.NewBasic()
@@ -244,6 +247,8 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 				creatureCircle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[action.CreatureId].Position, Width: structs.TileWidth, Height: structs.TileWidth}
 				creatureCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{0, 255, 0, 255}}, Color: color.Transparent}
 				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{itemCircle, creatureCircle})
+			case *EquipItem, *UnequipItem:
+				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{})
 			}
 		}
 	}
@@ -380,6 +385,69 @@ func (p *PickupItem) Process(w *ecs.World, dt float32) bool {
 		switch sys := system.(type) {
 		case *UiSystem:
 			if p.CreatureId == sys.input.player.NetworkID {
+				log.Info("updating inv ui")
+				sys.UpdateInventoryDisplay()
+			}
+		}
+	}
+	return true
+}
+
+type EquipItem struct {
+	InventorySlot int
+	CreatureId    structs.NetworkID
+}
+
+func (e *EquipItem) Process(w *ecs.World, dt float32) bool {
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *MapSystem:
+			creature := sys.Creatures[e.CreatureId]
+			item := creature.Inventory[e.InventorySlot]
+			equipped := creature.Equipment[item.Type]
+			creature.Equipment[item.Type] = item
+			creature.Inventory[e.InventorySlot] = equipped
+		}
+	}
+
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *UiSystem:
+			if e.CreatureId == sys.input.player.NetworkID {
+				log.Info("updating inv ui")
+				sys.UpdateInventoryDisplay()
+			}
+		}
+	}
+	return true
+}
+
+type UnequipItem struct {
+	EquipSlot  int
+	CreatureId structs.NetworkID
+}
+
+func (e *UnequipItem) Process(w *ecs.World, dt float32) bool {
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *MapSystem:
+			creature := sys.Creatures[e.CreatureId]
+			item := creature.Equipment[e.EquipSlot]
+			// put the item in the first empty inventory slot
+			for i, slot := range creature.Inventory {
+				if slot == nil {
+					creature.Inventory[i] = item
+					break
+				}
+			}
+			creature.Equipment[e.EquipSlot] = nil
+		}
+	}
+
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *UiSystem:
+			if e.CreatureId == sys.input.player.NetworkID {
 				log.Info("updating inv ui")
 				sys.UpdateInventoryDisplay()
 			}

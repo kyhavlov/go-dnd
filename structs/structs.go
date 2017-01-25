@@ -12,6 +12,7 @@ const TileWidth = 64
 
 const MinBrightness = 80
 const InventorySize = 5
+const EquipmentSlots = 4
 
 type NetworkID uint64
 
@@ -24,6 +25,7 @@ type Creature struct {
 	HealthComponent
 	StatComponent
 
+	Equipment [EquipmentSlots]*Item
 	Inventory [InventorySize]*Item
 
 	IsPlayerTeam bool
@@ -42,6 +44,15 @@ type StatComponent struct {
 	Stamina      int
 }
 
+type ItemType int
+
+const (
+	Weapon = iota
+	OffHand
+	Armor
+	Helm
+)
+
 type Item struct {
 	ecs.BasicEntity
 	NetworkID
@@ -49,6 +60,8 @@ type Item struct {
 	common.RenderComponent
 
 	OnGround bool
+
+	Type ItemType
 
 	Life int
 

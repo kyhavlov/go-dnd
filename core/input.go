@@ -33,7 +33,16 @@ func (input *InputSystem) New(w *ecs.World) {
 	input.mouseTracker.MouseComponent = common.MouseComponent{Track: true}
 	input.mouseTracker.SpaceComponent = common.SpaceComponent{}
 
-	engo.Input.RegisterButton(ReadyKey, engo.T)
+	engo.Input.RegisterButton(ReadyKey, engo.R)
+	engo.Input.RegisterButton(string(EquipmentHotkeys[0]), engo.G)
+	engo.Input.RegisterButton(string(EquipmentHotkeys[1]), engo.H)
+	engo.Input.RegisterButton(string(EquipmentHotkeys[2]), engo.J)
+	engo.Input.RegisterButton(string(EquipmentHotkeys[3]), engo.K)
+	engo.Input.RegisterButton(string(InventoryHotkeys[0]), engo.Z)
+	engo.Input.RegisterButton(string(InventoryHotkeys[1]), engo.X)
+	engo.Input.RegisterButton(string(InventoryHotkeys[2]), engo.C)
+	engo.Input.RegisterButton(string(InventoryHotkeys[3]), engo.V)
+	engo.Input.RegisterButton(string(InventoryHotkeys[4]), engo.B)
 
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
@@ -103,6 +112,38 @@ func (input *InputSystem) Update(dt float32) {
 			Events: []Event{&PlayerReady{
 				PlayerID: input.PlayerID,
 			}},
+		}
+	}
+
+	for i := 0; i < structs.InventorySize; i++ {
+		if engo.Input.Button(string(InventoryHotkeys[i])).JustPressed() && input.turn.PlayersTurn {
+			if input.player.Inventory[i] != nil {
+				input.outgoing <- NetworkMessage{
+					Events: []Event{&PlayerAction{
+						PlayerID: input.PlayerID,
+						Action: &EquipItem{
+							InventorySlot: i,
+							CreatureId:    input.player.NetworkID,
+						}},
+					},
+				}
+			}
+		}
+	}
+
+	for i := 0; i < structs.EquipmentSlots; i++ {
+		if engo.Input.Button(string(EquipmentHotkeys[i])).JustPressed() && input.turn.PlayersTurn {
+			if input.player.Equipment[i] != nil {
+				input.outgoing <- NetworkMessage{
+					Events: []Event{&PlayerAction{
+						PlayerID: input.PlayerID,
+						Action: &UnequipItem{
+							EquipSlot:  i,
+							CreatureId: input.player.NetworkID,
+						}},
+					},
+				}
+			}
 		}
 	}
 }
