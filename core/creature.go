@@ -3,7 +3,6 @@ package core
 import (
 	"engo.io/ecs"
 	"engo.io/engo/common"
-	log "github.com/Sirupsen/logrus"
 	"github.com/kyhavlov/go-dnd/structs"
 )
 
@@ -27,21 +26,14 @@ func AddCreature(w *ecs.World, creature *structs.Creature) {
 	}
 }
 
-type Attack struct {
-	Id       structs.NetworkID
-	TargetId structs.NetworkID
-}
-
-func (attack *Attack) Process(w *ecs.World, dt float32) bool {
-	var creature *structs.Creature
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *MapSystem:
-			creature = sys.Creatures[attack.TargetId]
-			creature.Life -= 20
-			log.Infof("Creature id %d took %d damage, at %d life now", attack.TargetId, 20, creature.Life)
+func GetCreatureSkills(creature *structs.Creature) []string {
+	var skills []string
+	skills = append(skills, creature.InnateSkills...)
+	for _, item := range creature.Equipment {
+		if item == nil {
+			continue
 		}
+		skills = append(skills, item.Skills...)
 	}
-
-	return true
+	return skills
 }

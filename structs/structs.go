@@ -12,7 +12,8 @@ const TileWidth = 64
 
 const MinBrightness = 80
 const InventorySize = 5
-const EquipmentSlots = 4
+const EquipmentSlots = 5
+const SkillSlots = 10
 
 type NetworkID uint64
 
@@ -25,8 +26,10 @@ type Creature struct {
 	HealthComponent
 	StatComponent
 
-	Equipment [EquipmentSlots]*Item
-	Inventory [InventorySize]*Item
+	Equipment    [EquipmentSlots]*Item
+	Inventory    [InventorySize]*Item
+	InnateSkills []string
+	Skills       []string
 
 	IsPlayerTeam bool
 }
@@ -51,6 +54,7 @@ const (
 	OffHand
 	Armor
 	Helm
+	Accessory
 )
 
 type Item struct {
@@ -62,6 +66,8 @@ type Item struct {
 	OnGround bool
 
 	Type ItemType
+
+	Skills []string
 
 	Life int
 

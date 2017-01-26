@@ -29,10 +29,14 @@ func RegisterEvents() {
 	gob.Register(&PlayerReady{})
 	gob.Register(&TurnChange{})
 	gob.Register(&Move{})
-	gob.Register(&Attack{})
+	gob.Register(&UseSkill{})
 	gob.Register(&PickupItem{})
 	gob.Register(&EquipItem{})
 	gob.Register(&UnequipItem{})
+
+	// skills
+	gob.Register(&BasicAttack{})
+	gob.Register(&Fireball{})
 }
 
 // Starts the game, generating the map from the given seed
@@ -90,6 +94,7 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 		Life:     20,
 		Type:     structs.Armor,
 		OnGround: true,
+		Skills:   []string{"fireball"},
 	}
 	item.BasicEntity = ecs.NewBasic()
 	item.SpaceComponent = common.SpaceComponent{
@@ -151,6 +156,13 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 	player := structs.Creature{
 		BasicEntity:  ecs.NewBasic(),
 		IsPlayerTeam: true,
+		InnateSkills: []string{"basicattack"},
+		StatComponent: structs.StatComponent{
+			Strength: 13,
+			Dexterity: 13,
+			Intelligence: 13,
+			Stamina: 50,
+		},
 	}
 	player.HealthComponent = structs.HealthComponent{
 		MaxLife: 50,
@@ -167,11 +179,13 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 
 	AddCreature(w, &player)
 
+	isLocalPlayer := false
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *InputSystem:
 			if sys.PlayerID == event.PlayerID {
 				sys.player = &player
+				isLocalPlayer = true
 			}
 		case *LightSystem:
 			sys.Add(&player.BasicEntity, &DynamicLightSource{
@@ -180,8 +194,11 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 			})
 		case *TurnSystem:
 			sys.PlayerReady[event.PlayerID] = false
+		case *UiSystem:
+			if isLocalPlayer {
+				sys.UpdatePlayerDisplay()
+			}
 		}
-
 	}
 
 	log.Infof("New player added at %v, ID: %d", event.GridPoint, event.PlayerID)
@@ -200,7 +217,7 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 		switch sys := system.(type) {
 		case *TurnSystem:
 			//log.Debugf("Setting action %v for player %d", reflect.TypeOf(p.Action), p.PlayerID)
-			sys.PlayerActions[p.PlayerID] = &p.Action
+			sys.PlayerActions[p.PlayerID] = p.Action
 		case *MapSystem:
 			move = sys
 		}
@@ -232,11 +249,15 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 					lines = append(lines, &line)
 				}
 				sys.UpdateActionIndicator(p.PlayerID, lines)
-			case *Attack:
-				circle := &UiElement{BasicEntity: ecs.NewBasic()}
-				circle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[action.TargetId].Position, Width: structs.TileWidth, Height: structs.TileWidth}
-				circle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
-				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{circle})
+			case *UseSkill:
+				source, target := action.Skill.GetSourceAndTarget()
+				sourceCircle := &UiElement{BasicEntity: ecs.NewBasic()}
+				sourceCircle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[source].Position, Width: structs.TileWidth, Height: structs.TileWidth}
+				sourceCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
+				targetCircle := &UiElement{BasicEntity: ecs.NewBasic()}
+				targetCircle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[target].Position, Width: structs.TileWidth, Height: structs.TileWidth}
+				targetCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
+				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{sourceCircle, targetCircle})
 			case *PickupItem:
 				itemCircle := &UiElement{BasicEntity: ecs.NewBasic()}
 				itemCircle.SpaceComponent = common.SpaceComponent{Width: structs.TileWidth, Height: structs.TileWidth}
@@ -285,6 +306,10 @@ func (t *TurnChange) Process(w *ecs.World, dt float32) bool {
 	return true
 }
 
+type NamedEvent interface {
+	Name() string
+}
+
 // Moves the entity with the given Id along the path
 type Move struct {
 	Id   structs.NetworkID
@@ -298,6 +323,7 @@ type Move struct {
 // Pixels per frame to move entities
 const speed = 3
 
+func (move *Move) Name() string { return "Move" }
 func (move *Move) Process(w *ecs.World, dt float32) bool {
 	var lights *LightSystem
 	for _, system := range w.Systems() {
@@ -357,11 +383,28 @@ func (move *Move) Process(w *ecs.World, dt float32) bool {
 	return false
 }
 
+type UseSkill struct {
+	Skill Skill
+}
+
+func (e *UseSkill) Name() string { return "Use skill" }
+func (e *UseSkill) Process(w *ecs.World, dt float32) bool {
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *MapSystem:
+			e.Skill.PerformSkillActions(sys)
+		}
+	}
+
+	return true
+}
+
 type PickupItem struct {
 	ItemId     structs.NetworkID
 	CreatureId structs.NetworkID
 }
 
+func (p *PickupItem) Name() string { return "Pick up item" }
 func (p *PickupItem) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
@@ -386,7 +429,7 @@ func (p *PickupItem) Process(w *ecs.World, dt float32) bool {
 		case *UiSystem:
 			if p.CreatureId == sys.input.player.NetworkID {
 				log.Info("updating inv ui")
-				sys.UpdateInventoryDisplay()
+				sys.UpdatePlayerDisplay()
 			}
 		}
 	}
@@ -398,6 +441,7 @@ type EquipItem struct {
 	CreatureId    structs.NetworkID
 }
 
+func (e *EquipItem) Name() string { return "Equip item" }
 func (e *EquipItem) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
@@ -415,7 +459,7 @@ func (e *EquipItem) Process(w *ecs.World, dt float32) bool {
 		case *UiSystem:
 			if e.CreatureId == sys.input.player.NetworkID {
 				log.Info("updating inv ui")
-				sys.UpdateInventoryDisplay()
+				sys.UpdatePlayerDisplay()
 			}
 		}
 	}
@@ -427,6 +471,7 @@ type UnequipItem struct {
 	CreatureId structs.NetworkID
 }
 
+func (e *UnequipItem) Name() string { return "Unequip item" }
 func (e *UnequipItem) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
@@ -449,7 +494,7 @@ func (e *UnequipItem) Process(w *ecs.World, dt float32) bool {
 		case *UiSystem:
 			if e.CreatureId == sys.input.player.NetworkID {
 				log.Info("updating inv ui")
-				sys.UpdateInventoryDisplay()
+				sys.UpdatePlayerDisplay()
 			}
 		}
 	}

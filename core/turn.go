@@ -6,7 +6,7 @@ import (
 )
 
 type TurnSystem struct {
-	PlayerActions map[PlayerID]*Event
+	PlayerActions map[PlayerID]Event
 	PlayerReady   map[PlayerID]bool
 	PlayersTurn   bool
 
@@ -19,7 +19,7 @@ func (ts *TurnSystem) IsPlayerReady(id PlayerID) bool {
 }
 
 func (ts *TurnSystem) New(w *ecs.World) {
-	ts.PlayerActions = make(map[PlayerID]*Event)
+	ts.PlayerActions = make(map[PlayerID]Event)
 	ts.PlayerReady = make(map[PlayerID]bool)
 	ts.PlayerReady[PlayerID(0)] = false
 	ts.PlayersTurn = true
@@ -54,7 +54,7 @@ func (ts *TurnSystem) Update(dt float32) {
 			log.Infof("All %d players ready", playerCount)
 			events := make([]Event, playerCount)
 			for id, event := range ts.PlayerActions {
-				events[id] = *event
+				events[id] = event
 			}
 			ts.event.AddEvents(events...)
 			ts.event.AddEvents(&TurnChange{true})
