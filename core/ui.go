@@ -148,9 +148,12 @@ func (us *UiSystem) UpdatePlayerDisplay() {
 
 	skills := GetCreatureSkills(us.input.player)
 	log.Infof("player skill count: %d", len(skills))
-	for i := 0; i < len(skills); i++ {
+	for i := 0; i < structs.SkillSlots; i++ {
 		if us.skillDisplay[i] != nil {
 			us.render.Remove(*us.skillDisplay[i])
+		}
+		if len(skills) <= i {
+			continue
 		}
 		entity := ecs.NewBasic()
 		us.skillDisplay[i] = &entity

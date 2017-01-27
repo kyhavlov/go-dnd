@@ -95,7 +95,7 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 		Life:     20,
 		Type:     structs.Armor,
 		OnGround: true,
-		Skills:   []string{"cleave"},
+		Skills:   []string{"cleave", "fireball"},
 	}
 	item.BasicEntity = ecs.NewBasic()
 	item.SpaceComponent = common.SpaceComponent{
