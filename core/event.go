@@ -37,6 +37,7 @@ func RegisterEvents() {
 	// skills
 	gob.Register(&BasicAttack{})
 	gob.Register(&Fireball{})
+	gob.Register(&Cleave{})
 }
 
 // Starts the game, generating the map from the given seed
@@ -94,7 +95,7 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 		Life:     20,
 		Type:     structs.Armor,
 		OnGround: true,
-		Skills:   []string{"fireball"},
+		Skills:   []string{"cleave"},
 	}
 	item.BasicEntity = ecs.NewBasic()
 	item.SpaceComponent = common.SpaceComponent{
@@ -158,10 +159,10 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 		IsPlayerTeam: true,
 		InnateSkills: []string{"basicattack"},
 		StatComponent: structs.StatComponent{
-			Strength: 13,
-			Dexterity: 13,
+			Strength:     13,
+			Dexterity:    13,
 			Intelligence: 13,
-			Stamina: 50,
+			Stamina:      50,
 		},
 	}
 	player.HealthComponent = structs.HealthComponent{

@@ -147,6 +147,7 @@ func (us *UiSystem) UpdatePlayerDisplay() {
 	}
 
 	skills := GetCreatureSkills(us.input.player)
+	log.Infof("player skill count: %d", len(skills))
 	for i := 0; i < len(skills); i++ {
 		if us.skillDisplay[i] != nil {
 			us.render.Remove(*us.skillDisplay[i])
@@ -268,7 +269,7 @@ func (us *UiSystem) setupReadyIndicators(sys *TurnSystem, font *common.Font, pla
 		actionStatus.RenderComponent.SetZIndex(2)
 		actionStatus.UpdateFunc = func() string {
 			actionStatus.RenderComponent.Color = color.White
-			action := sys.PlayerActions[PlayerID(playerNum - 1)]
+			action := sys.PlayerActions[PlayerID(playerNum-1)]
 			if action != nil {
 				return "  - " + action.(NamedEvent).Name()
 			}
