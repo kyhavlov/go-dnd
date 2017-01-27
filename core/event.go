@@ -91,12 +91,8 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 	}
 	pixelCoords := c.ToPixels()
 	pixelCoords.Add(engo.Point{structs.TileWidth / 4, structs.TileWidth / 4})
-	item := structs.Item{
-		Life:     20,
-		Type:     structs.Armor,
-		OnGround: true,
-		Skills:   []string{"cleave", "fireball"},
-	}
+	item := itemData["Sapphire Staff"]
+	item.OnGround = true
 	item.BasicEntity = ecs.NewBasic()
 	item.SpaceComponent = common.SpaceComponent{
 		Position: pixelCoords,
@@ -104,7 +100,7 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 		Height:   structs.TileWidth,
 	}
 	item.RenderComponent = common.RenderComponent{
-		Drawable: sheet.Cell(1378),
+		Drawable: sheet.Cell(item.Icon),
 		Scale:    engo.Point{0.5, 0.5},
 	}
 

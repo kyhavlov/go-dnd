@@ -30,8 +30,11 @@ func (*DungeonScene) Preload() {
 	engo.Files.Load(structs.SpritesheetPath)
 
 	// Load a font
-	err := engo.Files.Load("fonts/Gamegirl.ttf")
-	if err != nil {
+	if err := engo.Files.Load("fonts/Gamegirl.ttf"); err != nil {
+		panic(err)
+	}
+
+	if err := LoadItems(); err != nil {
 		panic(err)
 	}
 }

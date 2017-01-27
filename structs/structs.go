@@ -41,10 +41,12 @@ type HealthComponent struct {
 }
 
 type StatComponent struct {
-	Strength     int
-	Dexterity    int
-	Intelligence int
+	MaxLife      int `hcl:"life"`
+	Strength     int `hcl:"str"`
+	Dexterity    int `hcl:"dex"`
+	Intelligence int `hcl:"int"`
 	Stamina      int
+	StaminaRegen int `hcl:"stamina_regen"`
 }
 
 type ItemType int
@@ -58,25 +60,23 @@ const (
 )
 
 type Item struct {
-	ecs.BasicEntity
-	NetworkID
-	common.SpaceComponent
-	common.RenderComponent
+	ecs.BasicEntity        `hcl:"-"`
+	NetworkID              `hcl:"-"`
+	common.SpaceComponent  `hcl:"-"`
+	common.RenderComponent `hcl:"-"`
 
-	OnGround bool
+	Name string `hcl:",key"`
+	Icon int    `hcl:"icon"`
 
-	Type ItemType
+	OnGround bool `hcl:"-"`
+
+	Slot string
+	Type ItemType `hcl:"-"`
 
 	Skills []string
 
-	Life int
-
-	StrengthBonus     int
-	DexterityBonus    int
-	IntelligenceBonus int
-
-	StaminaBonus      int
-	StaminaRegenBonus int
+	Requirements StatComponent `hcl:"reqs"`
+	Bonuses      StatComponent `hcl:"bonus"`
 }
 
 // GridPoint refers to a specific tile's coordinates; incrementing X by 1
