@@ -30,7 +30,7 @@ func GetCreatureSkills(creature *structs.Creature) []string {
 	var skills []string
 	skills = append(skills, creature.InnateSkills...)
 	for _, item := range creature.Equipment {
-		if item == nil {
+		if item == nil || len(item.Skills) == 0 {
 			continue
 		}
 		skills = append(skills, item.Skills...)
