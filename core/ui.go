@@ -91,8 +91,6 @@ func (us *UiSystem) New(w *ecs.World) {
 	for _, skill := range structs.GetAllSkills() {
 		us.skillIcons[skill.Name] = sheet.Cell(skill.Icon)
 	}
-
-	us.setupMouseCoordPanel(w)
 }
 
 func (us *UiSystem) UpdateActionIndicator(player PlayerID, elems []*UiElement) {
@@ -283,10 +281,10 @@ func (us *UiSystem) setupReadyIndicators(sys *TurnSystem, font *common.Font, pla
 	}
 }
 
-func (us *UiSystem) setupMouseCoordPanel(world *ecs.World) {
+func (us *UiSystem) SetupStatsDisplay(world *ecs.World) {
 	position := engo.Point{24, 24}
 	width := float32(320)
-	height := float32(72)
+	height := float32(80)
 	bgColor := color.RGBA{200, 153, 0, 125}
 
 	// Create the panel background
@@ -307,9 +305,6 @@ func (us *UiSystem) setupMouseCoordPanel(world *ecs.World) {
 		}
 	}
 
-	// Add text fields
-
-	// Set font
 	fnt := &common.Font{
 		URL:  "fonts/Gamegirl.ttf",
 		FG:   color.White,
@@ -320,29 +315,30 @@ func (us *UiSystem) setupMouseCoordPanel(world *ecs.World) {
 		panic(err)
 	}
 
-	xCoord := DynamicText{BasicEntity: ecs.NewBasic()}
-	xCoord.RenderComponent.Drawable = common.Text{
+	// Add text fields
+	lifeDisplay := DynamicText{BasicEntity: ecs.NewBasic()}
+	lifeDisplay.RenderComponent.Drawable = common.Text{
 		Font: fnt,
 	}
-	xCoord.SetShader(common.HUDShader)
-	xCoord.SpaceComponent.Position.Set(position.X+10, position.Y+12)
-	xCoord.RenderComponent.SetZIndex(2)
+	lifeDisplay.SetShader(common.HUDShader)
+	lifeDisplay.SpaceComponent.Position.Set(position.X+10, position.Y+12)
+	lifeDisplay.RenderComponent.SetZIndex(2)
 
-	xCoord.UpdateFunc = func() string {
-		return fmt.Sprintf("Mouse X position is: %d", int(us.input.mouseTracker.MouseX))
+	lifeDisplay.UpdateFunc = func() string {
+		return fmt.Sprintf("Life:    %d/%d", us.input.player.Life, us.input.player.MaxLife)
 	}
 
-	yCoord := DynamicText{BasicEntity: ecs.NewBasic()}
-	yCoord.RenderComponent.Drawable = common.Text{
+	staminaDisplay := DynamicText{BasicEntity: ecs.NewBasic()}
+	staminaDisplay.RenderComponent.Drawable = common.Text{
 		Font: fnt,
 	}
-	yCoord.SetShader(common.HUDShader)
-	yCoord.SpaceComponent.Position.Set(position.X+10, position.Y+36)
-	yCoord.RenderComponent.SetZIndex(2)
-	yCoord.UpdateFunc = func() string {
-		return fmt.Sprintf("Mouse Y position is: %d", int(us.input.mouseTracker.MouseY))
+	staminaDisplay.SetShader(common.HUDShader)
+	staminaDisplay.SpaceComponent.Position.Set(position.X+10, position.Y+36)
+	staminaDisplay.RenderComponent.SetZIndex(2)
+	staminaDisplay.UpdateFunc = func() string {
+		return fmt.Sprintf("Stamina: %d/%d", us.input.player.Stamina, us.input.player.MaxStamina)
 	}
 
-	us.Add(&xCoord.BasicEntity, &xCoord)
-	us.Add(&yCoord.BasicEntity, &yCoord)
+	us.Add(&lifeDisplay.BasicEntity, &lifeDisplay)
+	us.Add(&staminaDisplay.BasicEntity, &staminaDisplay)
 }

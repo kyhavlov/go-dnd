@@ -120,7 +120,7 @@ func (input *InputSystem) Update(dt float32) {
 	}
 
 	for i := 0; i < structs.InventorySize; i++ {
-		if engo.Input.Button(string(InventoryHotkeys[i])).JustPressed() && input.turn.PlayersTurn {
+		if engo.Input.Button(string(InventoryHotkeys[i])).JustPressed() && input.turn.PlayersTurn && !input.turn.PlayerReady[input.PlayerID] {
 			if input.player.Inventory[i] != nil {
 				input.outgoing <- NetworkMessage{
 					Events: []Event{&PlayerAction{
@@ -136,7 +136,7 @@ func (input *InputSystem) Update(dt float32) {
 	}
 
 	for i := 0; i < structs.EquipmentSlots; i++ {
-		if engo.Input.Button(string(EquipmentHotkeys[i])).JustPressed() && input.turn.PlayersTurn {
+		if engo.Input.Button(string(EquipmentHotkeys[i])).JustPressed() && input.turn.PlayersTurn && !input.turn.PlayerReady[input.PlayerID] {
 			if input.player.Equipment[i] != nil {
 				input.outgoing <- NetworkMessage{
 					Events: []Event{&PlayerAction{
@@ -152,7 +152,7 @@ func (input *InputSystem) Update(dt float32) {
 	}
 
 	for i := 0; i < structs.SkillSlots; i++ {
-		if engo.Input.Button(string(SkillHotkeys[i])).JustPressed() && input.turn.PlayersTurn {
+		if engo.Input.Button(string(SkillHotkeys[i])).JustPressed() && input.turn.PlayersTurn && !input.turn.PlayerReady[input.PlayerID] {
 			gridPoint := structs.GridPoint{
 				X: int(input.mouseTracker.MouseComponent.MouseX / structs.TileWidth),
 				Y: int(input.mouseTracker.MouseComponent.MouseY / structs.TileWidth),
@@ -160,7 +160,7 @@ func (input *InputSystem) Update(dt float32) {
 
 			skills := GetCreatureSkills(input.player)
 			if target := input.mapSystem.GetCreatureAt(gridPoint); target != nil && len(skills) > i {
-				if SkillTargetIsValid(skills[i], input.mapSystem, input.player.NetworkID, target.NetworkID) {
+				if CanUseSkill(skills[i], input.mapSystem, input.player.NetworkID, target.NetworkID) {
 					input.outgoing <- NetworkMessage{
 						Events: []Event{&PlayerAction{
 							PlayerID: input.PlayerID,

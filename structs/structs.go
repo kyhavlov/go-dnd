@@ -64,6 +64,7 @@ func NewCreature(name string, coords GridPoint) *Creature {
 	creature.RenderComponent.SetZIndex(1)
 	creature.InnateSkills = append([]string{"Basic Attack"}, creature.InnateSkills...)
 	creature.Life = creature.MaxLife
+	creature.Stamina = creature.MaxStamina
 
 	return &creature
 }
@@ -78,7 +79,8 @@ type StatComponent struct {
 	Strength     int `hcl:"str"`
 	Dexterity    int `hcl:"dex"`
 	Intelligence int `hcl:"int"`
-	Stamina      int
+	MaxStamina   int `hcl:"stamina"`
+	Stamina      int `hcl:"-"`
 	StaminaRegen int `hcl:"stamina_regen"`
 }
 
@@ -172,8 +174,8 @@ type Skill struct {
 	MinRange int `hcl:"min_range"`
 	MaxRange int `hcl:"max_range"`
 
-	Damage int
-	Cost   int
+	Damage      int
+	StaminaCost int `hcl:"stamina_cost"`
 
 	DamageBonuses StatModifiers `hcl:"damage_bonuses"`
 

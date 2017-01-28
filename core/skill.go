@@ -5,10 +5,14 @@ import (
 	"github.com/kyhavlov/go-dnd/structs"
 )
 
-func SkillTargetIsValid(name string, sys *MapSystem, sourceID, targetID structs.NetworkID) bool {
+func CanUseSkill(name string, sys *MapSystem, sourceID, targetID structs.NetworkID) bool {
 	skill := structs.GetSkillData(name)
 	source := sys.Creatures[sourceID]
 	target := sys.Creatures[targetID]
+
+	if source.Stamina < skill.StaminaCost {
+		return false
+	}
 
 	a := structs.PointToGridPoint(source.SpaceComponent.Position)
 	b := structs.PointToGridPoint(target.SpaceComponent.Position)
@@ -57,4 +61,6 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID, targetID structs
 		t.Life -= damage
 		log.Infof("Creature id %d took %d damage from %s, at %d life now", t.NetworkID, damage, name, t.Life)
 	}
+
+	source.Stamina -= skill.StaminaCost
 }

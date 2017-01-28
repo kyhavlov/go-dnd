@@ -171,6 +171,7 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 		case *UiSystem:
 			if isLocalPlayer {
 				sys.UpdatePlayerDisplay()
+				sys.SetupStatsDisplay(w)
 			}
 		}
 	}
@@ -271,6 +272,20 @@ type TurnChange struct {
 }
 
 func (t *TurnChange) Process(w *ecs.World, dt float32) bool {
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *MapSystem:
+			for _, creature := range sys.Creatures {
+				if creature.IsPlayerTeam == t.PlayersTurn {
+					creature.Stamina += creature.StaminaRegen
+					if creature.Stamina > creature.MaxStamina {
+						creature.Stamina = creature.MaxStamina
+					}
+				}
+			}
+		}
+	}
+
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *TurnSystem:

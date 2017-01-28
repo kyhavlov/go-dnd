@@ -41,7 +41,7 @@ item "Sapphire Staff" {
 			Strength:     10,
 			Dexterity:    11,
 			Intelligence: 12,
-			Stamina:      40,
+			MaxStamina:   40,
 			StaminaRegen: 3,
 		},
 	}
@@ -84,7 +84,7 @@ creature "Goblin" {
 			Strength:     10,
 			Dexterity:    11,
 			Intelligence: 12,
-			Stamina:      40,
+			MaxStamina:   40,
 			StaminaRegen: 3,
 		},
 	}
@@ -137,7 +137,7 @@ skill "Fireball" {
   max_range = 5
 
   damage = 10
-  cost = 10
+  stamina_cost = 10
 
   damage_bonuses {
     int = 0.2
@@ -149,12 +149,12 @@ skill "Fireball" {
 }`
 
 	expected := Skill{
-		Name:     "Fireball",
-		Icon:     2761,
-		MinRange: 1,
-		MaxRange: 5,
-		Damage:   10,
-		Cost:     10,
+		Name:        "Fireball",
+		Icon:        2761,
+		MinRange:    1,
+		MaxRange:    5,
+		Damage:      10,
+		StaminaCost: 10,
 		DamageBonuses: StatModifiers{
 			Int: 0.2,
 		},
