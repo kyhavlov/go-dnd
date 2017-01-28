@@ -110,10 +110,12 @@ func (input *InputSystem) Update(dt float32) {
 	}
 
 	if engo.Input.Button(ReadyKey).JustPressed() && input.turn.PlayersTurn {
-		input.outgoing <- NetworkMessage{
-			Events: []Event{&PlayerReady{
-				PlayerID: input.PlayerID,
-			}},
+		if input.turn.PlayerActions[input.PlayerID] != nil {
+			input.outgoing <- NetworkMessage{
+				Events: []Event{&PlayerReady{
+					PlayerID: input.PlayerID,
+				}},
+			}
 		}
 	}
 
