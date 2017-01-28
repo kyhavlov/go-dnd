@@ -27,14 +27,14 @@ func (*DungeonScene) Type() string { return "dnd" }
 // Preload is called before loading any assets from the disk,
 // to allow you to register / queue them
 func (*DungeonScene) Preload() {
-	engo.Files.Load(structs.SpritesheetPath)
+	structs.LoadSprites()
 
 	// Load a font
 	if err := engo.Files.Load("fonts/Gamegirl.ttf"); err != nil {
 		panic(err)
 	}
 
-	if err := LoadItems(); err != nil {
+	if err := structs.LoadItems(); err != nil {
 		panic(err)
 	}
 }

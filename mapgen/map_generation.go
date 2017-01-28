@@ -4,12 +4,10 @@ import (
 	"math/rand"
 	"sort"
 
-	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
 	log "github.com/Sirupsen/logrus"
 	"github.com/kyhavlov/go-dnd/structs"
-	"image/color"
 )
 
 type RoomNode struct {
@@ -305,7 +303,7 @@ func GenerateMap(seed int64) *Map {
 					Y: room.Y + j,
 				}
 
-				level.Tiles = append(level.Tiles, newTile(sheet, loc, 861+rand.Intn(8)))
+				level.Tiles = append(level.Tiles, structs.NewTile("Dungeon Floor", loc))
 			}
 		}
 	}
@@ -315,7 +313,7 @@ func GenerateMap(seed int64) *Map {
 		tile.X -= offset.X
 		tile.Y -= offset.Y
 
-		level.Tiles = append(level.Tiles, newTile(sheet, tile, 861+rand.Intn(8)))
+		level.Tiles = append(level.Tiles, structs.NewTile("Dungeon Floor", tile))
 	}
 
 	// Spawn creatures in some of the rooms
@@ -327,43 +325,11 @@ func GenerateMap(seed int64) *Map {
 					X: room.X + random.Intn(room.Size),
 					Y: room.Y + random.Intn(room.Size),
 				}
-				creature := structs.Creature{}
-				creature.BasicEntity = ecs.NewBasic()
-				creature.SpaceComponent = common.SpaceComponent{
-					Position: coords.ToPixels(),
-					Width:    structs.TileWidth,
-					Height:   structs.TileWidth,
-				}
-				creature.RenderComponent = common.RenderComponent{
-					Drawable: sheet.Cell(533),
-					Scale:    engo.Point{1, 1},
-				}
-				creature.HealthComponent = structs.HealthComponent{
-					MaxLife: 40,
-				}
-				level.Creatures = append(level.Creatures, &creature)
+				creature := structs.NewCreature("Skeleton", coords)
+				level.Creatures = append(level.Creatures, creature)
 			}
 		}
 	}
 
 	return level
-}
-
-func newTile(sheet *common.Spritesheet, coords structs.GridPoint, sprite int) *structs.Tile {
-	tile := structs.Tile{}
-	tile.BasicEntity = ecs.NewBasic()
-	tile.SpaceComponent = common.SpaceComponent{
-		Position: coords.ToPixels(),
-		Width:    structs.TileWidth,
-		Height:   structs.TileWidth,
-	}
-	tile.RenderComponent = common.RenderComponent{
-		Drawable: sheet.Cell(sprite),
-		Color:    color.Alpha{structs.MinBrightness},
-		Scale:    engo.Point{1, 1},
-	}
-	tile.RenderComponent.SetZIndex(-100)
-	tile.GridPoint = coords
-
-	return &tile
 }

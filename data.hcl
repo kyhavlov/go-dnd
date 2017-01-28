@@ -17,15 +17,30 @@ item "Leather Armor" {
   }
 }
 
-creature "Goblin" {
-  life = 20
-  str = 12
-  dex = 12
-  int = 12
-  stamina = 50
+creature "Player" {
+  stats {
+    life = 20
+    str = 12
+    dex = 12
+    int = 12
+    stamina = 50
+  }
+}
 
-  equipment = ["Sapphire Staff"]
-  skills = ["firestorm"]
+creature "Skeleton" {
+  icon = 533
+
+  stats {
+    life = 20
+    str = 12
+    dex = 12
+    int = 12
+    stamina = 50
+  }
+}
+
+tile "Dungeon Floor" {
+  icons = [861, 862, 863, 864, 865, 866, 867, 868]
 }
 
 skill "fireball" {

@@ -5,10 +5,19 @@ import (
 	"engo.io/engo"
 	"engo.io/engo/common"
 	"github.com/engoengine/math/imath"
+	"image/color"
+	"math/rand"
 )
 
 const SpritesheetPath = "textures/dungeon2x.png"
 const TileWidth = 64
+
+var sprites *common.Spritesheet
+
+func LoadSprites() {
+	engo.Files.Load(SpritesheetPath)
+	sprites = common.NewSpritesheetFromFile(SpritesheetPath, TileWidth, TileWidth)
+}
 
 const MinBrightness = 80
 const InventorySize = 5
@@ -18,26 +27,48 @@ const SkillSlots = 10
 type NetworkID uint64
 
 type Creature struct {
-	ecs.BasicEntity
-	NetworkID
-	common.SpaceComponent
-	common.RenderComponent
+	ecs.BasicEntity        `hcl:"-"`
+	NetworkID              `hcl:"-"`
+	common.SpaceComponent  `hcl:"-"`
+	common.RenderComponent `hcl:"-"`
 
-	HealthComponent
-	StatComponent
+	HealthComponent `hcl:"-"`
+
+	Name string `hcl:",key"`
+	Icon int    `hcl:"icon"`
+
+	StatComponent `hcl:"stats"`
+
+	StartingItems []string `hcl:"items"`
 
 	Equipment    [EquipmentSlots]*Item
 	Inventory    [InventorySize]*Item
-	InnateSkills []string
-	Skills       []string
+	InnateSkills []string `hcl:"skills"`
+	Skills       []string `hcl:"-"`
 
 	IsPlayerTeam bool
 }
 
+func NewCreature(name string, coords GridPoint) *Creature {
+	creature := GetCreatureData(name)
+	creature.BasicEntity = ecs.NewBasic()
+	creature.SpaceComponent = common.SpaceComponent{
+		Position: coords.ToPixels(),
+		Width:    TileWidth,
+		Height:   TileWidth,
+	}
+	creature.RenderComponent = common.RenderComponent{
+		Drawable: sprites.Cell(creature.Icon),
+		Scale:    engo.Point{1, 1},
+	}
+	creature.Life = creature.MaxLife
+
+	return &creature
+}
+
 type HealthComponent struct {
-	MaxLife int
-	Life    int
-	Dead    bool
+	Life int
+	Dead bool
 }
 
 type StatComponent struct {
@@ -65,10 +96,10 @@ type Item struct {
 	common.SpaceComponent  `hcl:"-"`
 	common.RenderComponent `hcl:"-"`
 
+	OnGround bool `hcl:"-"`
+
 	Name string `hcl:",key"`
 	Icon int    `hcl:"icon"`
-
-	OnGround bool `hcl:"-"`
 
 	Slot string
 	Type ItemType `hcl:"-"`
@@ -102,9 +133,31 @@ func PointToGridPoint(p engo.Point) GridPoint {
 }
 
 type Tile struct {
-	ecs.BasicEntity
-	common.RenderComponent
-	common.SpaceComponent
-	GridPoint
-	Sprite int
+	ecs.BasicEntity        `hcl:"-"`
+	common.RenderComponent `hcl:"-"`
+	common.SpaceComponent  `hcl:"-"`
+	GridPoint              `hcl:"-"`
+
+	Name  string `hcl:",key"`
+	Icons []int
+}
+
+func NewTile(name string, coords GridPoint) *Tile {
+	tile := GetTileData(name)
+	tile.BasicEntity = ecs.NewBasic()
+	tile.SpaceComponent = common.SpaceComponent{
+		Position: coords.ToPixels(),
+		Width:    TileWidth,
+		Height:   TileWidth,
+	}
+	sprite := tile.Icons[rand.Intn(len(tile.Icons))]
+	tile.RenderComponent = common.RenderComponent{
+		Drawable: sprites.Cell(sprite),
+		Color:    color.Alpha{MinBrightness},
+		Scale:    engo.Point{1, 1},
+	}
+	tile.RenderComponent.SetZIndex(-100)
+	tile.GridPoint = coords
+
+	return &tile
 }

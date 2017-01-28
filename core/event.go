@@ -91,7 +91,7 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 	}
 	pixelCoords := c.ToPixels()
 	pixelCoords.Add(engo.Point{structs.TileWidth / 4, structs.TileWidth / 4})
-	item := itemData["Sapphire Staff"]
+	item := structs.GetItemData("Sapphire Staff")
 	item.OnGround = true
 	item.BasicEntity = ecs.NewBasic()
 	item.SpaceComponent = common.SpaceComponent{
@@ -155,14 +155,12 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 		IsPlayerTeam: true,
 		InnateSkills: []string{"basicattack"},
 		StatComponent: structs.StatComponent{
+			MaxLife:      40,
 			Strength:     13,
 			Dexterity:    13,
 			Intelligence: 13,
 			Stamina:      50,
 		},
-	}
-	player.HealthComponent = structs.HealthComponent{
-		MaxLife: 50,
 	}
 	player.SpaceComponent = common.SpaceComponent{
 		Position: event.GridPoint.ToPixels(),
