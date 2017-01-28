@@ -10,11 +10,13 @@ import (
 var itemData map[string]Item
 var creatureData map[string]Creature
 var tileData map[string]Tile
+var skillData map[string]Skill
 
 type Data struct {
 	Items     []Item     `hcl:"item"`
 	Creatures []Creature `hcl:"creature"`
 	Tiles     []Tile     `hcl:"tile"`
+	Skills    []Skill    `hcl:"skill"`
 }
 
 func LoadItems() error {
@@ -29,10 +31,24 @@ func LoadItems() error {
 		return err
 	}
 
+	skillData = make(map[string]Skill)
+	for _, skill := range data.Skills {
+		if _, ok := skillData[skill.Name]; ok {
+			return fmt.Errorf("Error: got multiple sets of stats for skill: '%s'", skill.Name)
+		}
+
+		skillData[skill.Name] = skill
+	}
+
 	itemData = make(map[string]Item)
 	for _, item := range data.Items {
 		if _, ok := itemData[item.Name]; ok {
 			return fmt.Errorf("Error: got multiple sets of stats for item: '%s'", item.Name)
+		}
+		for _, skill := range item.Skills {
+			if _, ok := skillData[skill]; !ok {
+				return fmt.Errorf("Error: item '%s' has unrecognized skill: '%s'", item.Name, skill)
+			}
 		}
 		switch item.Slot {
 		case "weapon":
@@ -89,4 +105,12 @@ func GetCreatureData(name string) Creature {
 
 func GetTileData(name string) Tile {
 	return tileData[name]
+}
+
+func GetSkillData(name string) Skill {
+	return skillData[name]
+}
+
+func GetAllSkills() map[string]Skill {
+	return skillData
 }

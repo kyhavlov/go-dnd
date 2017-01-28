@@ -7,8 +7,6 @@ import (
 )
 
 func AddCreature(w *ecs.World, creature *structs.Creature) {
-	creature.Life = creature.MaxLife
-
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *NetworkSystem:

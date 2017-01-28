@@ -61,6 +61,8 @@ func NewCreature(name string, coords GridPoint) *Creature {
 		Drawable: sprites.Cell(creature.Icon),
 		Scale:    engo.Point{1, 1},
 	}
+	creature.RenderComponent.SetZIndex(1)
+	creature.InnateSkills = append([]string{"Basic Attack"}, creature.InnateSkills...)
 	creature.Life = creature.MaxLife
 
 	return &creature
@@ -161,3 +163,26 @@ func NewTile(name string, coords GridPoint) *Tile {
 
 	return &tile
 }
+
+type Skill struct {
+	Name string `hcl:",key"`
+
+	Icon int
+
+	MinRange int `hcl:"min_range"`
+	MaxRange int `hcl:"max_range"`
+
+	Damage int
+	Cost   int
+
+	DamageBonuses StatModifiers `hcl:"damage_bonuses"`
+
+	Effects map[string]int
+}
+
+type StatModifiers struct {
+	Int float64
+	Str float64
+}
+
+const CleaveEffect = "hits_perpendicular"

@@ -88,8 +88,8 @@ func (us *UiSystem) New(w *ecs.World) {
 	// Load skill icons
 	sheet := common.NewSpritesheetFromFile(structs.SpritesheetPath, structs.TileWidth, structs.TileWidth)
 	us.skillIcons = make(map[string]common.Drawable)
-	for skill, icon := range skillIcons {
-		us.skillIcons[skill] = sheet.Cell(icon)
+	for _, skill := range structs.GetAllSkills() {
+		us.skillIcons[skill.Name] = sheet.Cell(skill.Icon)
 	}
 
 	us.setupMouseCoordPanel(w)

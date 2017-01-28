@@ -127,3 +127,50 @@ tile "Floor" {
 		t.Fatalf("bad: \n%v\n%v", data.Tiles[0], expected)
 	}
 }
+
+func TestParseSkill(t *testing.T) {
+	raw := `
+skill "Fireball" {
+  icon = 2761
+
+  min_range = 1
+  max_range = 5
+
+  damage = 10
+  cost = 10
+
+  damage_bonuses {
+    int = 0.2
+  }
+
+  effects {
+    hits_perpendicular = 1
+  }
+}`
+
+	expected := Skill{
+		Name:     "Fireball",
+		Icon:     2761,
+		MinRange: 1,
+		MaxRange: 5,
+		Damage:   10,
+		Cost:     10,
+		DamageBonuses: StatModifiers{
+			Int: 0.2,
+		},
+		Effects: map[string]int{"hits_perpendicular": 1},
+	}
+
+	data, err := ParseItems(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(data.Skills) != 1 {
+		t.Fatalf("bad: %v", len(data.Skills))
+	}
+
+	if !reflect.DeepEqual(data.Skills[0], expected) {
+		t.Fatalf("bad: \n%v\n%v", data.Skills[0], expected)
+	}
+}

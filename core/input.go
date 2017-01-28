@@ -160,12 +160,11 @@ func (input *InputSystem) Update(dt float32) {
 
 			skills := GetCreatureSkills(input.player)
 			if target := input.mapSystem.GetCreatureAt(gridPoint); target != nil && len(skills) > i {
-				skill := NewSkill(skills[i], input.player.NetworkID, target.NetworkID)
-				if skill.TargetIsValid(input.mapSystem) {
+				if SkillTargetIsValid(skills[i], input.mapSystem, input.player.NetworkID, target.NetworkID) {
 					input.outgoing <- NetworkMessage{
 						Events: []Event{&PlayerAction{
 							PlayerID: input.PlayerID,
-							Action:   &UseSkill{skill},
+							Action:   &UseSkill{skills[i], input.player.NetworkID, target.NetworkID},
 						}},
 					}
 				} else {

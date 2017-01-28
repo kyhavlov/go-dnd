@@ -5,6 +5,7 @@ import (
 	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/engoengine/math"
 	"github.com/kyhavlov/go-dnd/mapgen"
@@ -33,11 +34,6 @@ func RegisterEvents() {
 	gob.Register(&PickupItem{})
 	gob.Register(&EquipItem{})
 	gob.Register(&UnequipItem{})
-
-	// skills
-	gob.Register(&BasicAttack{})
-	gob.Register(&Fireball{})
-	gob.Register(&Cleave{})
 }
 
 // Starts the game, generating the map from the given seed
@@ -150,36 +146,19 @@ type NewPlayer struct {
 func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 	sheet := common.NewSpritesheetFromFile(structs.SpritesheetPath, structs.TileWidth, structs.TileWidth)
 
-	player := structs.Creature{
-		BasicEntity:  ecs.NewBasic(),
-		IsPlayerTeam: true,
-		InnateSkills: []string{"basicattack"},
-		StatComponent: structs.StatComponent{
-			MaxLife:      40,
-			Strength:     13,
-			Dexterity:    13,
-			Intelligence: 13,
-			Stamina:      50,
-		},
-	}
-	player.SpaceComponent = common.SpaceComponent{
-		Position: event.GridPoint.ToPixels(),
-		Width:    structs.TileWidth,
-		Height:   structs.TileWidth,
-	}
+	player := structs.NewCreature("Player", event.GridPoint)
+	player.IsPlayerTeam = true
 	player.RenderComponent = common.RenderComponent{
-		Drawable: sheet.Cell(594 + int(event.PlayerID)),
+		Drawable: sheet.Cell(player.Icon + int(event.PlayerID)),
 	}
-	player.RenderComponent.SetZIndex(1)
-
-	AddCreature(w, &player)
+	AddCreature(w, player)
 
 	isLocalPlayer := false
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *InputSystem:
 			if sys.PlayerID == event.PlayerID {
-				sys.player = &player
+				sys.player = player
 				isLocalPlayer = true
 			}
 		case *LightSystem:
@@ -245,7 +224,8 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 				}
 				sys.UpdateActionIndicator(p.PlayerID, lines)
 			case *UseSkill:
-				source, target := action.Skill.GetSourceAndTarget()
+				source := action.Source
+				target := action.Target
 				sourceCircle := &UiElement{BasicEntity: ecs.NewBasic()}
 				sourceCircle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[source].Position, Width: structs.TileWidth, Height: structs.TileWidth}
 				sourceCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
@@ -318,7 +298,7 @@ type Move struct {
 // Pixels per frame to move entities
 const speed = 3
 
-func (move *Move) Name() string { return "Move" }
+func (move *Move) Name() string { return "Moving" }
 func (move *Move) Process(w *ecs.World, dt float32) bool {
 	var lights *LightSystem
 	for _, system := range w.Systems() {
@@ -379,15 +359,17 @@ func (move *Move) Process(w *ecs.World, dt float32) bool {
 }
 
 type UseSkill struct {
-	Skill Skill
+	SkillName string
+	Source    structs.NetworkID
+	Target    structs.NetworkID
 }
 
-func (e *UseSkill) Name() string { return "Use skill" }
+func (e *UseSkill) Name() string { return fmt.Sprintf("Using skill: %s", e.SkillName) }
 func (e *UseSkill) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *MapSystem:
-			e.Skill.PerformSkillActions(sys)
+			PerformSkillActions(e.SkillName, sys, e.Source, e.Target)
 		}
 	}
 
@@ -399,7 +381,7 @@ type PickupItem struct {
 	CreatureId structs.NetworkID
 }
 
-func (p *PickupItem) Name() string { return "Pick up item" }
+func (p *PickupItem) Name() string { return "Picking up item" }
 func (p *PickupItem) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
@@ -436,7 +418,7 @@ type EquipItem struct {
 	CreatureId    structs.NetworkID
 }
 
-func (e *EquipItem) Name() string { return "Equip item" }
+func (e *EquipItem) Name() string { return "Equipping item" }
 func (e *EquipItem) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
