@@ -144,7 +144,7 @@ func (us *UiSystem) UpdatePlayerDisplay() {
 		us.render.Add(&entity, &component, us.inventoryFrames[i])
 	}
 
-	skills := GetCreatureSkills(us.input.player)
+	skills := us.input.player.GetSkills()
 	log.Infof("player skill count: %d", len(skills))
 	for i := 0; i < structs.SkillSlots; i++ {
 		if us.skillDisplay[i] != nil {

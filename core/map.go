@@ -83,29 +83,3 @@ func (ms *MapSystem) MapWidth() int {
 func (ms *MapSystem) MapHeight() int {
 	return len(ms.Tiles[0])
 }
-
-func AddTile(w *ecs.World, tile *structs.Tile) {
-	added := false
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *MapSystem:
-			if sys.GetTileAt(tile.GridPoint) == nil {
-				sys.AddTile(tile)
-				added = true
-			}
-		case *LightSystem:
-			sys.needsUpdate = true
-		}
-	}
-
-	// don't add something to the render system unless we added it to the map
-	// TODO: don't try to create overlapping tiles in the first place
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *common.RenderSystem:
-			if added {
-				sys.Add(&tile.BasicEntity, &tile.RenderComponent, &tile.SpaceComponent)
-			}
-		}
-	}
-}

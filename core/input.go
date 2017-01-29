@@ -158,7 +158,7 @@ func (input *InputSystem) Update(dt float32) {
 				Y: int(input.mouseTracker.MouseComponent.MouseY / structs.TileWidth),
 			}
 
-			skills := GetCreatureSkills(input.player)
+			skills := input.player.GetSkills()
 			if target := input.mapSystem.GetCreatureAt(gridPoint); target != nil && len(skills) > i {
 				if CanUseSkill(skills[i], input.mapSystem, input.player.NetworkID, target.NetworkID) {
 					input.outgoing <- NetworkMessage{
