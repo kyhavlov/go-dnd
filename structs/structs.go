@@ -158,8 +158,9 @@ type Skill struct {
 }
 
 type StatModifiers struct {
-	Int float64
 	Str float64
+	Dex float64
+	Int float64
 }
 
 const CleaveEffect = "hits_perpendicular"

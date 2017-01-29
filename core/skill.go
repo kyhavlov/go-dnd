@@ -56,8 +56,9 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID, targetID structs
 
 	for _, t := range targets {
 		damage := skill.Damage
-		damage += int(skill.DamageBonuses.Str * float64(source.Strength))
-		damage += int(skill.DamageBonuses.Int * float64(source.Intelligence))
+		damage += int(skill.DamageBonuses.Str * float64(source.GetEffectiveStrength()))
+		damage += int(skill.DamageBonuses.Dex * float64(source.GetEffectiveDexterity()))
+		damage += int(skill.DamageBonuses.Int * float64(source.GetEffectiveIntelligence()))
 		t.Life -= damage
 		log.Infof("Creature id %d took %d damage from %s, at %d life now", t.NetworkID, damage, name, t.Life)
 	}

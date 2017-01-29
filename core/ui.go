@@ -325,8 +325,9 @@ func (us *UiSystem) SetupStatsDisplay(world *ecs.World) {
 	lifeDisplay.RenderComponent.SetZIndex(2)
 
 	lifeDisplay.UpdateFunc = func() string {
-		return fmt.Sprintf("Life:    %d/%d", us.input.player.Life, us.input.player.MaxLife)
+		return fmt.Sprintf("Life:    %d/%d", us.input.player.Life, us.input.player.GetEffectiveMaxLife())
 	}
+	us.Add(&lifeDisplay.BasicEntity, &lifeDisplay)
 
 	staminaDisplay := DynamicText{BasicEntity: ecs.NewBasic()}
 	staminaDisplay.RenderComponent.Drawable = common.Text{
@@ -338,7 +339,18 @@ func (us *UiSystem) SetupStatsDisplay(world *ecs.World) {
 	staminaDisplay.UpdateFunc = func() string {
 		return fmt.Sprintf("Stamina: %d/%d", us.input.player.Stamina, us.input.player.MaxStamina)
 	}
-
-	us.Add(&lifeDisplay.BasicEntity, &lifeDisplay)
 	us.Add(&staminaDisplay.BasicEntity, &staminaDisplay)
+
+	statDisplay := DynamicText{BasicEntity: ecs.NewBasic()}
+	statDisplay.RenderComponent.Drawable = common.Text{
+		Font: fnt,
+	}
+	statDisplay.SetShader(common.HUDShader)
+	statDisplay.SpaceComponent.Position.Set(position.X+10, position.Y+60)
+	statDisplay.RenderComponent.SetZIndex(2)
+	statDisplay.UpdateFunc = func() string {
+		return fmt.Sprintf("Str %d  Dex %d  Int %d", us.input.player.GetEffectiveStrength(),
+			us.input.player.GetEffectiveDexterity(), us.input.player.GetEffectiveIntelligence())
+	}
+	us.Add(&statDisplay.BasicEntity, &statDisplay)
 }

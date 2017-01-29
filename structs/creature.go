@@ -2,8 +2,8 @@ package structs
 
 import (
 	"engo.io/ecs"
-	"engo.io/engo/common"
 	"engo.io/engo"
+	"engo.io/engo/common"
 )
 
 type Creature struct {
@@ -59,4 +59,44 @@ func (c *Creature) GetSkills() []string {
 		skills = append(skills, item.Skills...)
 	}
 	return skills
+}
+
+func (c *Creature) GetEffectiveMaxLife() int {
+	life := c.MaxLife
+	for _, item := range c.Equipment {
+		if item != nil {
+			life += item.Bonuses.MaxLife
+		}
+	}
+	return life
+}
+
+func (c *Creature) GetEffectiveStrength() int {
+	str := c.Strength
+	for _, item := range c.Equipment {
+		if item != nil {
+			str += item.Bonuses.Strength
+		}
+	}
+	return str
+}
+
+func (c *Creature) GetEffectiveDexterity() int {
+	dex := c.Dexterity
+	for _, item := range c.Equipment {
+		if item != nil {
+			dex += item.Bonuses.Dexterity
+		}
+	}
+	return dex
+}
+
+func (c *Creature) GetEffectiveIntelligence() int {
+	intelligence := c.Intelligence
+	for _, item := range c.Equipment {
+		if item != nil {
+			intelligence += item.Bonuses.Intelligence
+		}
+	}
+	return intelligence
 }

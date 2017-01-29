@@ -449,6 +449,10 @@ func (e *EquipItem) Process(w *ecs.World, dt float32) bool {
 			equipped := creature.Equipment[item.Type]
 			creature.Equipment[item.Type] = item
 			creature.Inventory[e.InventorySlot] = equipped
+
+			// Adjust max life/stamina based on bonuses
+			creature.Life += item.Bonuses.MaxLife
+			creature.Stamina += item.Bonuses.MaxStamina
 		}
 	}
 
@@ -484,6 +488,10 @@ func (e *UnequipItem) Process(w *ecs.World, dt float32) bool {
 				}
 			}
 			creature.Equipment[e.EquipSlot] = nil
+
+			// Adjust max life/stamina based on bonuses
+			creature.Life -= item.Bonuses.MaxLife
+			creature.Stamina -= item.Bonuses.MaxStamina
 		}
 	}
 
