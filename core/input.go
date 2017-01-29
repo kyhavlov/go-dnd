@@ -26,6 +26,7 @@ type InputSystem struct {
 }
 
 const ReadyKey = "ready"
+const ResetKey = "reset"
 
 // New is the initialisation of the System
 func (input *InputSystem) New(w *ecs.World) {
@@ -34,6 +35,7 @@ func (input *InputSystem) New(w *ecs.World) {
 	input.mouseTracker.SpaceComponent = common.SpaceComponent{}
 
 	engo.Input.RegisterButton(ReadyKey, engo.R)
+	engo.Input.RegisterButton(ResetKey, engo.F)
 
 	engo.Input.RegisterButton(string(EquipmentHotkeys[0]), engo.G)
 	engo.Input.RegisterButton(string(EquipmentHotkeys[1]), engo.H)
@@ -92,7 +94,8 @@ func (input *InputSystem) Update(dt float32) {
 				start := input.mapSystem.GetTileAt(structs.PointToGridPoint(input.player.SpaceComponent.Position))
 				path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles, input.mapSystem.CreatureLocations, true)
 
-				if len(path) < 17 {
+				if len(path) < 17 && len(path) > 1 {
+					log.Infof("moving on path: %v", path)
 					input.outgoing <- NetworkMessage{
 						Events: []Event{&PlayerAction{
 							PlayerID: input.PlayerID,
@@ -113,6 +116,16 @@ func (input *InputSystem) Update(dt float32) {
 		if input.turn.PlayerActions[input.PlayerID] != nil {
 			input.outgoing <- NetworkMessage{
 				Events: []Event{&PlayerReady{
+					PlayerID: input.PlayerID,
+				}},
+			}
+		}
+	}
+
+	if engo.Input.Button(ResetKey).JustPressed() && input.turn.PlayersTurn {
+		if input.turn.PlayerActions[input.PlayerID] != nil {
+			input.outgoing <- NetworkMessage{
+				Events: []Event{&ResetPlayerActions{
 					PlayerID: input.PlayerID,
 				}},
 			}

@@ -93,17 +93,21 @@ func (us *UiSystem) New(w *ecs.World) {
 	}
 }
 
-func (us *UiSystem) UpdateActionIndicator(player PlayerID, elems []*UiElement) {
+func (us *UiSystem) AddActionIndicators(player PlayerID, elems []*UiElement) {
+	for _, elem := range elems {
+		us.render.Add(&elem.BasicEntity, &elem.RenderComponent, &elem.SpaceComponent)
+	}
+	us.actionIndicators[player] = append(us.actionIndicators[player], elems...)
+}
+
+func (us *UiSystem) ResetActionIndicators(player PlayerID) {
 	prev, ok := us.actionIndicators[player]
 	if ok {
 		for _, elem := range prev {
 			us.render.Remove(elem.BasicEntity)
 		}
 	}
-	for _, elem := range elems {
-		us.render.Add(&elem.BasicEntity, &elem.RenderComponent, &elem.SpaceComponent)
-	}
-	us.actionIndicators[player] = elems
+	us.actionIndicators[player] = nil
 }
 
 // Update the items shown in the inventory display slots
@@ -261,23 +265,26 @@ func (us *UiSystem) setupReadyIndicators(sys *TurnSystem, font *common.Font, pla
 
 		us.Add(&readyStatus.BasicEntity, &readyStatus)
 
-		actionStatus := DynamicText{BasicEntity: ecs.NewBasic()}
-		actionStatus.RenderComponent.Drawable = common.Text{
-			Font: font,
-		}
-		actionStatus.SetShader(common.HUDShader)
-		actionStatus.SpaceComponent.Position.Set(24, float32(138+(i*72)))
-		actionStatus.RenderComponent.SetZIndex(2)
-		actionStatus.UpdateFunc = func() string {
-			actionStatus.RenderComponent.Color = color.White
-			action := sys.PlayerActions[PlayerID(playerNum-1)]
-			if action != nil {
-				return "  - " + action.(NamedEvent).Name()
+		for j := 0; j < 2; j++ {
+			actionStatus := DynamicText{BasicEntity: ecs.NewBasic()}
+			actionStatus.RenderComponent.Drawable = common.Text{
+				Font: font,
 			}
-			return ""
-		}
+			actionStatus.SetShader(common.HUDShader)
+			actionStatus.SpaceComponent.Position.Set(24, float32(138+(i*72)+(j*18)))
+			actionStatus.RenderComponent.SetZIndex(2)
+			actionNum := j
+			actionStatus.UpdateFunc = func() string {
+				actionStatus.RenderComponent.Color = color.White
+				if len(sys.PlayerActions[PlayerID(playerNum-1)]) > actionNum {
+					action := sys.PlayerActions[PlayerID(playerNum-1)][actionNum]
+					return "  - " + action.(NamedEvent).Name()
+				}
+				return ""
+			}
 
-		us.Add(&actionStatus.BasicEntity, &actionStatus)
+			us.Add(&actionStatus.BasicEntity, &actionStatus)
+		}
 	}
 }
 

@@ -27,6 +27,7 @@ func RegisterEvents() {
 	gob.Register(&SetPlayerID{})
 	gob.Register(&NewPlayer{})
 	gob.Register(&PlayerAction{})
+	gob.Register(&ResetPlayerActions{})
 	gob.Register(&PlayerReady{})
 	gob.Register(&TurnChange{})
 	gob.Register(&Move{})
@@ -185,8 +186,22 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *TurnSystem:
-			//log.Debugf("Setting action %v for player %d", reflect.TypeOf(p.Action), p.PlayerID)
-			sys.PlayerActions[p.PlayerID] = p.Action
+			// Check that the action type is valid based on what they already have locked in
+			if len(sys.PlayerActions[p.PlayerID]) < 2 {
+				switch p.Action.(type) {
+				case *Move:
+					if !sys.PlayerHasMove(p.PlayerID) {
+						return true
+					}
+				default:
+					if sys.PlayerHasMove(p.PlayerID) && len(sys.PlayerActions[p.PlayerID]) == 1 {
+						return true
+					}
+				}
+				sys.PlayerActions[p.PlayerID] = append(sys.PlayerActions[p.PlayerID], p.Action)
+			} else {
+				return true
+			}
 		case *MapSystem:
 			move = sys
 		}
@@ -217,7 +232,7 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 					line.RenderComponent = common.RenderComponent{Drawable: common.Rectangle{}, Color: color.RGBA{0, 255, 0 + uint8(p.PlayerID*255), 255}}
 					lines = append(lines, &line)
 				}
-				sys.UpdateActionIndicator(p.PlayerID, lines)
+				sys.AddActionIndicators(p.PlayerID, lines)
 			case *UseSkill:
 				source := action.Source
 				target := action.Target
@@ -227,7 +242,7 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 				targetCircle := &UiElement{BasicEntity: ecs.NewBasic()}
 				targetCircle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[target].Position, Width: structs.TileWidth, Height: structs.TileWidth}
 				targetCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
-				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{sourceCircle, targetCircle})
+				sys.AddActionIndicators(p.PlayerID, []*UiElement{sourceCircle, targetCircle})
 			case *PickupItem:
 				itemCircle := &UiElement{BasicEntity: ecs.NewBasic()}
 				itemCircle.SpaceComponent = common.SpaceComponent{Width: structs.TileWidth, Height: structs.TileWidth}
@@ -237,10 +252,31 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 				creatureCircle := &UiElement{BasicEntity: ecs.NewBasic()}
 				creatureCircle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[action.CreatureId].Position, Width: structs.TileWidth, Height: structs.TileWidth}
 				creatureCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{0, 255, 0, 255}}, Color: color.Transparent}
-				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{itemCircle, creatureCircle})
+				sys.AddActionIndicators(p.PlayerID, []*UiElement{itemCircle, creatureCircle})
 			case *EquipItem, *UnequipItem:
-				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{})
+				sys.AddActionIndicators(p.PlayerID, []*UiElement{})
 			}
+		}
+	}
+	return true
+}
+
+type ResetPlayerActions struct {
+	PlayerID PlayerID
+}
+
+func (e *ResetPlayerActions) Process(w *ecs.World, dt float32) bool {
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *TurnSystem:
+			sys.PlayerActions[e.PlayerID] = nil
+			sys.PlayerReady[e.PlayerID] = false
+		}
+	}
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *UiSystem:
+			sys.ResetActionIndicators(e.PlayerID)
 		}
 	}
 	return true
