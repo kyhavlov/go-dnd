@@ -77,45 +77,20 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 		AddCreature(w, creature)
 	}
 
-	// Make a test item
-	sheet := common.NewSpritesheetFromFile(structs.SpritesheetPath, structs.TileWidth, structs.TileWidth)
-	if sheet == nil {
-		log.Fatalf("Unable to load texture file")
-	}
-	c := structs.GridPoint{
+	// Make some test items
+	staff := structs.NewItem("Sapphire Staff", structs.GridPoint{
+		X: level.StartLoc.X + 1,
+		Y: level.StartLoc.Y + 2,
+	})
+	staff.OnGround = true
+	AddItem(w, staff)
+
+	armor := structs.NewItem("Leather Armor", structs.GridPoint{
 		X: level.StartLoc.X + 2,
 		Y: level.StartLoc.Y + 2,
-	}
-	pixelCoords := c.ToPixels()
-	pixelCoords.Add(engo.Point{structs.TileWidth / 4, structs.TileWidth / 4})
-	item := structs.GetItemData("Sapphire Staff")
-	item.OnGround = true
-	item.BasicEntity = ecs.NewBasic()
-	item.SpaceComponent = common.SpaceComponent{
-		Position: pixelCoords,
-		Width:    structs.TileWidth,
-		Height:   structs.TileWidth,
-	}
-	item.RenderComponent = common.RenderComponent{
-		Drawable: sheet.Cell(item.Icon),
-		Scale:    engo.Point{0.5, 0.5},
-	}
-
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *NetworkSystem:
-			item.NetworkID = sys.nextId()
-		}
-	}
-
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *common.RenderSystem:
-			sys.Add(&item.BasicEntity, &item.RenderComponent, &item.SpaceComponent)
-		case *MapSystem:
-			sys.AddItem(&item)
-		}
-	}
+	})
+	armor.OnGround = true
+	AddItem(w, armor)
 
 	return true
 }

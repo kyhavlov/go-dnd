@@ -88,10 +88,12 @@ func (ls *LightSystem) Update(dt float32) {
 
 				for j := 0; j <= radius*2; j++ {
 					//log.Infof("%d, %d distance to %d, %d: %d", current.X, current.Y, light.X, light.Y, current.distanceTo(&light.GridPoint))
-					if current.DistanceTo(light.GetLocation()) <= radius {
-						if current.X >= 0 && current.X <= ls.mapSystem.MapWidth() && current.Y >= 0 && current.Y <= ls.mapSystem.MapHeight() {
+					if current.X >= 0 && current.X <= ls.mapSystem.MapWidth() && current.Y >= 0 && current.Y <= ls.mapSystem.MapHeight() {
+						dist := current.DistanceTo(light.GetLocation())
+
+						if dist <= radius {
 							if tile := ls.mapSystem.Tiles[current.X][current.Y]; tile != nil {
-								lightStrength := (radius - current.DistanceTo(light.GetLocation())) * LIGHT_DECREASE
+								lightStrength := (radius - dist) * LIGHT_DECREASE
 								//log.Infof("lights at %d,%d updated to %d", current.X, current.Y, int(tile.Color.(color.Alpha).A) + lightStrength)
 								tile.Color = color.Alpha{uint8(imath.Min(int(tile.Color.(color.Alpha).A)+lightStrength, 250))}
 							}

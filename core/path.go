@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/engoengine/math/imath"
 	"github.com/kyhavlov/go-dnd/structs"
+	//log "github.com/Sirupsen/logrus"
 )
 
 // Standard A* implementation for finding a shortest path between two map tiles.

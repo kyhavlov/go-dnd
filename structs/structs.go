@@ -114,6 +114,24 @@ type Item struct {
 	Bonuses      StatComponent `hcl:"bonus"`
 }
 
+func NewItem(name string, coords GridPoint) *Item {
+	item := GetItemData(name)
+	item.OnGround = true
+	item.BasicEntity = ecs.NewBasic()
+	item.SpaceComponent = common.SpaceComponent{
+		Position: coords.ToPixels(),
+		Width:    TileWidth,
+		Height:   TileWidth,
+	}
+	item.SpaceComponent.Position.Add(engo.Point{TileWidth / 4, TileWidth / 4})
+	item.RenderComponent = common.RenderComponent{
+		Drawable: sprites.Cell(item.Icon),
+		Scale:    engo.Point{0.5, 0.5},
+	}
+
+	return &item
+}
+
 // GridPoint refers to a specific tile's coordinates; incrementing X by 1
 // translates to going 1 tile to the right
 type GridPoint struct {

@@ -14,13 +14,14 @@ type RoomNode struct {
 	Neighbors map[int]*RoomNode
 	Id        int
 	structs.GridPoint
-	Size    int
+	Width   int
+	Height  int
 	visited bool
 	depth   int
 }
 
 func (room *RoomNode) Contains(point structs.GridPoint) bool {
-	if room.X <= point.X && room.X+room.Size >= point.X && room.Y <= point.Y && room.Y+room.Size <= point.Y {
+	if room.X <= point.X && room.X+room.Width >= point.X && room.Y <= point.Y && room.Y+room.Height <= point.Y {
 		return true
 	}
 	return false
@@ -58,13 +59,14 @@ func addNewRoom(id int, random *rand.Rand, edgeRoom *RoomNode) (*RoomNode, []str
 	newRoom := &RoomNode{
 		Neighbors: make(map[int]*RoomNode),
 		Id:        id,
-		Size:      5 + rand.Intn(6),
+		Width:     5 + rand.Intn(5),
+		Height:    5 + rand.Intn(5),
 		depth:     edgeRoom.depth + 1,
 	}
 
 	// place room a random distance offset from selected edge room
-	xOffset := -6 + random.Intn(edgeRoom.Size+12)
-	yOffset := -6 + random.Intn(edgeRoom.Size+12)
+	xOffset := -6 + random.Intn(edgeRoom.Width+12)
+	yOffset := -6 + random.Intn(edgeRoom.Height+12)
 
 	newRoom.GridPoint = structs.GridPoint{edgeRoom.X + xOffset, edgeRoom.Y + yOffset}
 
@@ -88,20 +90,20 @@ func addNewRoom(id int, random *rand.Rand, edgeRoom *RoomNode) (*RoomNode, []str
 	start := structs.GridPoint{}
 	end := structs.GridPoint{}
 
-	if leftRoom.X+leftRoom.Size > rightRoom.X && leftRoom.X < rightRoom.X+rightRoom.Size {
-		start.X = rightRoom.X + random.Intn(leftRoom.X+leftRoom.Size-rightRoom.X)
+	if leftRoom.X+leftRoom.Width > rightRoom.X && leftRoom.X < rightRoom.X+rightRoom.Width {
+		start.X = rightRoom.X + random.Intn(leftRoom.X+leftRoom.Width-rightRoom.X)
 		end.X = start.X
 	} else {
-		start.X = leftRoom.X + random.Intn(leftRoom.Size)
-		end.X = rightRoom.X + random.Intn(rightRoom.Size)
+		start.X = leftRoom.X + random.Intn(leftRoom.Width)
+		end.X = rightRoom.X + random.Intn(rightRoom.Width)
 	}
 
-	if bottomRoom.Y+bottomRoom.Size > topRoom.Y && bottomRoom.Y < topRoom.Y+topRoom.Size {
-		start.Y = topRoom.Y + random.Intn(bottomRoom.Y+bottomRoom.Size-topRoom.Y)
+	if bottomRoom.Y+bottomRoom.Height > topRoom.Y && bottomRoom.Y < topRoom.Y+topRoom.Height {
+		start.Y = topRoom.Y + random.Intn(bottomRoom.Y+bottomRoom.Height-topRoom.Y)
 		end.Y = start.Y
 	} else {
-		start.Y = bottomRoom.Y + random.Intn(bottomRoom.Size)
-		end.Y = topRoom.Y + random.Intn(topRoom.Size)
+		start.Y = bottomRoom.Y + random.Intn(bottomRoom.Height)
+		end.Y = topRoom.Y + random.Intn(topRoom.Height)
 	}
 
 	for i := start.Y; i <= end.Y; i++ {
@@ -124,13 +126,13 @@ func addNewRoom(id int, random *rand.Rand, edgeRoom *RoomNode) (*RoomNode, []str
 
 func roomIsValid(room *RoomNode, rooms []*RoomNode) bool {
 	roomMax := structs.GridPoint{
-		X: room.X + room.Size,
-		Y: room.Y + room.Size,
+		X: room.X + room.Width,
+		Y: room.Y + room.Height,
 	}
 	for _, otherRoom := range rooms {
 		otherMax := structs.GridPoint{
-			X: otherRoom.X + otherRoom.Size,
-			Y: otherRoom.Y + otherRoom.Size,
+			X: otherRoom.X + otherRoom.Width,
+			Y: otherRoom.Y + otherRoom.Height,
 		}
 
 		// add 1 to the lengths so the walls of the rooms don't touch
@@ -155,13 +157,14 @@ func GenerateMap(seed int64) *Map {
 	var rooms Rooms
 	var hallways []structs.GridPoint
 
-	dungeonLength := 7 + random.Intn(7)
+	dungeonLength := 7 + random.Intn(5)
 	idInc := 0
 
 	startingRoom := &RoomNode{
 		Neighbors: make(map[int]*RoomNode),
 		Id:        idInc,
-		Size:      4,
+		Width:     4,
+		Height:    4,
 		depth:     1,
 	}
 	rooms = append(rooms, startingRoom)
@@ -252,11 +255,11 @@ func GenerateMap(seed int64) *Map {
 		if room.Y < offset.Y {
 			offset.Y = room.Y
 		}
-		if room.X+room.Size > maxPoint.X {
-			maxPoint.X = room.X + room.Size
+		if room.X+room.Width > maxPoint.X {
+			maxPoint.X = room.X + room.Width
 		}
-		if room.Y+room.Size > maxPoint.Y {
-			maxPoint.Y = room.Y + room.Size
+		if room.Y+room.Height > maxPoint.Y {
+			maxPoint.Y = room.Y + room.Height
 		}
 	}
 
@@ -297,8 +300,8 @@ func GenerateMap(seed int64) *Map {
 		room.X -= offset.X
 		room.Y -= offset.Y
 		log.Debug(room)
-		for i := 0; i < room.Size; i++ {
-			for j := 0; j < room.Size; j++ {
+		for i := 0; i < room.Width; i++ {
+			for j := 0; j < room.Height; j++ {
 				loc := structs.GridPoint{
 					X: room.X + i,
 					Y: room.Y + j,
@@ -322,11 +325,11 @@ func GenerateMap(seed int64) *Map {
 	// Spawn creatures in some of the rooms
 	for _, room := range rooms {
 		if random.Intn(2) == 0 && room != startingRoom {
-			count := 1 + random.Intn(3)
+			count := 1 + random.Intn(4)
 			for i := 0; i < count; i++ {
 				coords := structs.GridPoint{
-					X: room.X + random.Intn(room.Size),
-					Y: room.Y + random.Intn(room.Size),
+					X: room.X + random.Intn(room.Width),
+					Y: room.Y + random.Intn(room.Height),
 				}
 				creature := structs.NewCreature("Skeleton", coords)
 				level.Creatures = append(level.Creatures, creature)
