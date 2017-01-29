@@ -54,6 +54,7 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 				sys.PlayerReady[PlayerID(i)] = false
 			}
 		case *MapSystem:
+			sys.MapInfo = level
 			sys.Tiles = make([][]*structs.Tile, level.Width)
 			for i, _ := range sys.Tiles {
 				sys.Tiles[i] = make([]*structs.Tile, level.Height)
@@ -82,8 +83,8 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 		log.Fatalf("Unable to load texture file")
 	}
 	c := structs.GridPoint{
-		X: 7,
-		Y: 3,
+		X: level.StartLoc.X + 2,
+		Y: level.StartLoc.Y + 2,
 	}
 	pixelCoords := c.ToPixels()
 	pixelCoords.Add(engo.Point{structs.TileWidth / 4, structs.TileWidth / 4})
@@ -140,13 +141,22 @@ func (event *SetPlayerID) Process(w *ecs.World, dt float32) bool {
 type NewPlayer struct {
 	PlayerID
 	Life int
-	structs.GridPoint
 }
 
 func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 	sheet := common.NewSpritesheetFromFile(structs.SpritesheetPath, structs.TileWidth, structs.TileWidth)
 
-	player := structs.NewCreature("Player", event.GridPoint)
+	var spawnLoc structs.GridPoint
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *MapSystem:
+			spawnLoc = sys.MapInfo.StartLoc
+		}
+	}
+	spawnLoc.X += int(event.PlayerID)
+	spawnLoc.Y += 3
+
+	player := structs.NewCreature("Player", spawnLoc)
 	player.IsPlayerTeam = true
 	player.RenderComponent = common.RenderComponent{
 		Drawable: sheet.Cell(player.Icon + int(event.PlayerID)),
@@ -176,7 +186,13 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 		}
 	}
 
-	log.Infof("New player added at %v, ID: %d", event.GridPoint, event.PlayerID)
+	// Start the camera on this player if it's ours
+	if isLocalPlayer {
+		engo.Mailbox.Dispatch(common.CameraMessage{Axis: common.XAxis, Value: player.SpaceComponent.Position.X, Incremental: false})
+		engo.Mailbox.Dispatch(common.CameraMessage{Axis: common.YAxis, Value: player.SpaceComponent.Position.Y, Incremental: false})
+	}
+
+	log.Infof("New player added at %v, ID: %d", spawnLoc, event.PlayerID)
 
 	return true
 }

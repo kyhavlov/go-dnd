@@ -58,7 +58,7 @@ func addNewRoom(id int, random *rand.Rand, edgeRoom *RoomNode) (*RoomNode, []str
 	newRoom := &RoomNode{
 		Neighbors: make(map[int]*RoomNode),
 		Id:        id,
-		Size:      5,
+		Size:      5 + rand.Intn(6),
 		depth:     edgeRoom.depth + 1,
 	}
 
@@ -146,6 +146,7 @@ type Map struct {
 	Creatures []*structs.Creature
 	Width     int
 	Height    int
+	StartLoc  structs.GridPoint
 }
 
 // Generates a map from a seed number
@@ -307,6 +308,8 @@ func GenerateMap(seed int64) *Map {
 			}
 		}
 	}
+
+	level.StartLoc = startingRoom.GridPoint
 
 	// Next, do the hallways
 	for _, tile := range hallways {

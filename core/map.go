@@ -4,6 +4,7 @@ import (
 	"engo.io/ecs"
 	"engo.io/engo/common"
 
+	"github.com/kyhavlov/go-dnd/mapgen"
 	"github.com/kyhavlov/go-dnd/structs"
 )
 
@@ -11,6 +12,8 @@ import (
 type MapSystem struct {
 	networkIds      map[*ecs.BasicEntity]structs.NetworkID
 	SpaceComponents map[structs.NetworkID]*common.SpaceComponent
+
+	MapInfo *mapgen.Map
 
 	Tiles [][]*structs.Tile
 
