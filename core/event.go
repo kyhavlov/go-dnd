@@ -63,9 +63,12 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 			for i, _ := range sys.CreatureLocations {
 				sys.CreatureLocations[i] = make([]*structs.Creature, level.Height)
 			}
-			sys.ItemLocations = make([][]*structs.Item, level.Width)
+			sys.ItemLocations = make([][][]*structs.Item, level.Width)
 			for i, _ := range sys.ItemLocations {
-				sys.ItemLocations[i] = make([]*structs.Item, level.Height)
+				sys.ItemLocations[i] = make([][]*structs.Item, level.Height)
+				for j, _ := range sys.ItemLocations[i] {
+					sys.ItemLocations[i][j] = make([]*structs.Item, 0)
+				}
 			}
 		}
 	}
@@ -86,7 +89,7 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 	AddItem(w, staff)
 
 	armor := structs.NewItem("Leather Armor", structs.GridPoint{
-		X: level.StartLoc.X + 2,
+		X: level.StartLoc.X + 1,
 		Y: level.StartLoc.Y + 2,
 	})
 	armor.OnGround = true
@@ -402,6 +405,18 @@ func (p *PickupItem) Process(w *ecs.World, dt float32) bool {
 				}
 			}
 			log.Infof("Inventory: %v", creature.Inventory)
+			itemLoc := structs.PointToGridPoint(item.Position)
+			itemPile := sys.ItemLocations[itemLoc.X][itemLoc.Y]
+			for i, _ := range itemPile {
+				if itemPile[i].NetworkID == p.ItemId {
+					if len(itemPile) == 1 {
+						sys.ItemLocations[itemLoc.X][itemLoc.Y] = []*structs.Item{}
+					} else {
+						itemPile[i] = itemPile[len(itemPile)-1]
+						sys.ItemLocations[itemLoc.X][itemLoc.Y] = itemPile[:len(itemPile)-1]
+					}
+				}
+			}
 			item.RenderComponent.Hidden = true
 			item.OnGround = false
 		}

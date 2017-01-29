@@ -78,12 +78,12 @@ func (input *InputSystem) Update(dt float32) {
 
 		// If the target is occupied by an enemy, try to attack
 		if input.mapSystem.GetTileAt(gridPoint) != nil {
-			if item := input.mapSystem.GetItemAt(gridPoint); item != nil && item.OnGround {
+			if items := input.mapSystem.GetItemsAt(gridPoint); len(items) > 0 && items[0].OnGround {
 				input.outgoing <- NetworkMessage{
 					Events: []Event{&PlayerAction{
 						PlayerID: input.PlayerID,
 						Action: &PickupItem{
-							ItemId:     item.NetworkID,
+							ItemId:     items[0].NetworkID,
 							CreatureId: input.player.NetworkID,
 						},
 					}},

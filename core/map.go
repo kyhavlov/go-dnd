@@ -21,7 +21,7 @@ type MapSystem struct {
 	CreatureLocations [][]*structs.Creature
 
 	Items         map[structs.NetworkID]*structs.Item
-	ItemLocations [][]*structs.Item
+	ItemLocations [][][]*structs.Item
 }
 
 // New is the initialisation of the System
@@ -59,11 +59,11 @@ func (ms *MapSystem) AddItem(item *structs.Item) {
 	ms.SpaceComponents[item.NetworkID] = &item.SpaceComponent
 	ms.networkIds[&item.BasicEntity] = item.NetworkID
 	gridPoint := structs.PointToGridPoint(item.Position)
-	ms.ItemLocations[gridPoint.X][gridPoint.Y] = item
+	ms.ItemLocations[gridPoint.X][gridPoint.Y] = append(ms.ItemLocations[gridPoint.X][gridPoint.Y], item)
 	ms.Items[item.NetworkID] = item
 }
 
-func (ms *MapSystem) GetItemAt(point structs.GridPoint) *structs.Item {
+func (ms *MapSystem) GetItemsAt(point structs.GridPoint) []*structs.Item {
 	return ms.ItemLocations[point.X][point.Y]
 }
 func (ms *MapSystem) Update(dt float32) {}
