@@ -57,6 +57,24 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID, targetID structs
 		}
 	}
 
+	// Add extra targets in radius
+	if radius, ok := skill.Effects[structs.AoeEffect]; ok {
+		current := b
+		current.X -= radius
+		current.Y -= radius
+		for i := 0; i < radius*2+1; i++ {
+			for j := 0; j < radius*2+1; j++ {
+				creature := sys.GetCreatureAt(current)
+				if creature != nil && creature.NetworkID != target.NetworkID {
+					targets = append(targets, creature)
+				}
+				current.Y++
+			}
+			current.X++
+			current.Y-= radius*2+1
+		}
+	}
+
 	for _, t := range targets {
 		damage := skill.Damage
 		damage += int(skill.DamageBonuses.Str * float64(source.GetEffectiveStrength()))

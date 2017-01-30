@@ -165,3 +165,4 @@ type StatModifiers struct {
 }
 
 const CleaveEffect = "hits_perpendicular"
+const AoeEffect = "aoe_radius"

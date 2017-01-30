@@ -2,7 +2,7 @@
 item "Sapphire Staff" {
   slot = "weapon"
   icon = 1734
-  skills = ["Fireball", "Cleave"]
+  skills = ["Fireball", "Cleave", "Ice Storm"]
   bonus {
     int = 12
     stamina_regen = 3
@@ -77,7 +77,7 @@ skill "Fireball" {
   stamina_cost = 10
 
   damage_bonuses {
-    int = 0.2
+    int = 0.5
   }
 }
 
@@ -88,13 +88,31 @@ skill "Cleave" {
   max_range = 1
 
   damage = 10
-  stamina_cost = 5
+  stamina_cost = 10
 
   damage_bonuses {
-    str = 0.1
+    str = 0.3
   }
 
   effects {
     hits_perpendicular = 1
+  }
+}
+
+skill "Ice Storm" {
+  icon = 2776
+
+  min_range = 0
+  max_range = 5
+
+  damage = 10
+  stamina_cost = 15
+
+  damage_bonuses {
+    int = 0.15
+  }
+
+  effects {
+    aoe_radius = 1
   }
 }
