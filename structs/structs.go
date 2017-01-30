@@ -32,6 +32,7 @@ type HealthComponent struct {
 }
 
 type StatComponent struct {
+	Movement     int `hcl:"move"`
 	MaxLife      int `hcl:"life"`
 	Strength     int `hcl:"str"`
 	Dexterity    int `hcl:"dex"`

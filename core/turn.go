@@ -57,7 +57,8 @@ func (ts *TurnSystem) Update(dt float32) {
 				events[id] = event
 			}
 			ts.event.AddEvents(events...)
-			ts.event.AddEvents(&TurnChange{true})
+			ts.event.AddEvents(&TurnChange{false})
+			ts.event.AddEvents(&EnemyTurn{})
 			for i := 0; i < playerCount; i++ {
 				ts.PlayerActions[PlayerID(i)] = nil
 				ts.PlayerReady[PlayerID(i)] = false

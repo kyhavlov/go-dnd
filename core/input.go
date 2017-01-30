@@ -90,9 +90,9 @@ func (input *InputSystem) Update(dt float32) {
 				}
 			} else {
 				start := input.mapSystem.GetTileAt(structs.PointToGridPoint(input.player.SpaceComponent.Position))
-				path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles, input.mapSystem.CreatureLocations, true)
+				path := GetPath(start, input.mapSystem.GetTileAt(gridPoint), input.mapSystem.Tiles, input.mapSystem.CreatureLocations, TeamPlayer)
 
-				if len(path) < 17 {
+				if len(path) <= input.player.GetEffectiveMovement() && len(path) > 1 {
 					input.outgoing <- NetworkMessage{
 						Events: []Event{&PlayerAction{
 							PlayerID: input.PlayerID,

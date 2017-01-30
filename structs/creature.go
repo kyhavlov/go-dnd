@@ -27,6 +27,7 @@ type Creature struct {
 	Skills       []string `hcl:"-"`
 
 	IsPlayerTeam bool
+	IsActivated  bool
 }
 
 func NewCreature(name string, coords GridPoint) *Creature {
@@ -59,6 +60,16 @@ func (c *Creature) GetSkills() []string {
 		skills = append(skills, item.Skills...)
 	}
 	return skills
+}
+
+func (c *Creature) GetEffectiveMovement() int {
+	life := c.Movement
+	for _, item := range c.Equipment {
+		if item != nil {
+			life += item.Bonuses.Movement
+		}
+	}
+	return life
 }
 
 func (c *Creature) GetEffectiveMaxLife() int {

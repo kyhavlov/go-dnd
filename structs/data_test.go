@@ -66,6 +66,7 @@ creature "Goblin" {
   icon = 2345
   skills = ["fireball", "ice-armor"]
   stats {
+    move = 5
     life = 30
     str = 10
     dex = 11
@@ -80,6 +81,7 @@ creature "Goblin" {
 		Icon:         2345,
 		InnateSkills: []string{"fireball", "ice-armor"},
 		StatComponent: StatComponent{
+			Movement:     5,
 			MaxLife:      30,
 			Strength:     10,
 			Dexterity:    11,

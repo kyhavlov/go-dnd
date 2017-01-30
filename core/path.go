@@ -6,9 +6,17 @@ import (
 	//log "github.com/Sirupsen/logrus"
 )
 
+type Team int
+
+const (
+	TeamAny Team = iota
+	TeamPlayer
+	TeamEnemy
+)
+
 // Standard A* implementation for finding a shortest path between two map tiles.
 // Comments stolen from wikipedia article on A*: https://en.wikipedia.org/wiki/A*_search_algorithm
-func GetPath(start, goal *structs.Tile, tiles [][]*structs.Tile, creatures [][]*structs.Creature, playerTeam bool) []structs.GridPoint {
+func GetPath(start, goal *structs.Tile, tiles [][]*structs.Tile, creatures [][]*structs.Creature, team Team) []structs.GridPoint {
 	// The set of nodes already evaluated
 	closedSet := make(map[*structs.Tile]bool)
 	// The set of currently discovered nodes still to be evaluated.
@@ -33,6 +41,23 @@ func GetPath(start, goal *structs.Tile, tiles [][]*structs.Tile, creatures [][]*
 	fScore[start] = getEstimatedDistance(start, goal)
 
 	path := make([]structs.GridPoint, 0)
+
+	// Define a function, sameTeam, for checking whether a creature is on a team we're allowed to move through
+	var sameTeam func(x, y int) bool
+	switch team {
+	case TeamAny:
+		sameTeam = func(x, y int) bool {
+			return true
+		}
+	case TeamPlayer:
+		sameTeam = func(x, y int) bool {
+			return creatures[x][y] == nil || creatures[x][y].IsPlayerTeam
+		}
+	case TeamEnemy:
+		sameTeam = func(x, y int) bool {
+			return creatures[x][y] == nil || !creatures[x][y].IsPlayerTeam
+		}
+	}
 
 	for len(openSet) > 0 {
 		// Set current to the node in the open set with the lowest fScore
@@ -67,7 +92,7 @@ func GetPath(start, goal *structs.Tile, tiles [][]*structs.Tile, creatures [][]*
 		closedSet[current] = true
 
 		// Evaluate adjacent tiles to the current one
-		for _, neighbor := range getNeighbors(current, tiles, creatures, playerTeam) {
+		for _, neighbor := range getNeighbors(current, tiles, sameTeam) {
 			// Ignore the neighbors which are already evaluated.
 			if _, ok := closedSet[neighbor]; ok {
 				continue
@@ -100,12 +125,8 @@ func getEstimatedDistance(a, b *structs.Tile) int {
 }
 
 // TODO: re-use the neighbors slice instead of allocating a new one every time we call this
-func getNeighbors(tile *structs.Tile, tiles [][]*structs.Tile, creatures [][]*structs.Creature, playerTeam bool) []*structs.Tile {
+func getNeighbors(tile *structs.Tile, tiles [][]*structs.Tile, sameTeam func(x, y int) bool) []*structs.Tile {
 	neighbors := make([]*structs.Tile, 0)
-
-	sameTeam := func(x, y int) bool {
-		return creatures[x][y] == nil || creatures[x][y].IsPlayerTeam == playerTeam
-	}
 
 	if tile.X > 0 && tiles[tile.X-1][tile.Y] != nil && sameTeam(tile.X-1, tile.Y) {
 		neighbors = append(neighbors, tiles[tile.X-1][tile.Y])

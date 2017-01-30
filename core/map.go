@@ -19,6 +19,7 @@ type MapSystem struct {
 
 	Creatures         map[structs.NetworkID]*structs.Creature
 	CreatureLocations [][]*structs.Creature
+	Players           map[PlayerID]*structs.Creature
 
 	Items         map[structs.NetworkID]*structs.Item
 	ItemLocations [][][]*structs.Item
@@ -29,6 +30,7 @@ func (ms *MapSystem) New(w *ecs.World) {
 	ms.networkIds = make(map[*ecs.BasicEntity]structs.NetworkID)
 	ms.SpaceComponents = make(map[structs.NetworkID]*common.SpaceComponent)
 	ms.Creatures = make(map[structs.NetworkID]*structs.Creature)
+	ms.Players = make(map[PlayerID]*structs.Creature)
 	ms.Items = make(map[structs.NetworkID]*structs.Item)
 }
 

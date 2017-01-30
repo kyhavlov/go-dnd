@@ -23,6 +23,7 @@ creature "Player" {
   icon = 594
 
   stats {
+    move = 8
     life = 40
     str = 13
     dex = 13
@@ -36,6 +37,7 @@ creature "Skeleton" {
   icon = 533
 
   stats {
+    move = 5
     life = 20
     str = 12
     dex = 12

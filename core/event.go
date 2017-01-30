@@ -144,6 +144,8 @@ func (event *NewPlayer) Process(w *ecs.World, dt float32) bool {
 	isLocalPlayer := false
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
+		case *MapSystem:
+			sys.Players[event.PlayerID] = player
 		case *InputSystem:
 			if sys.PlayerID == event.PlayerID {
 				sys.player = player
@@ -254,7 +256,6 @@ func (p *PlayerReady) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *TurnSystem:
-			//log.Debugf("Setting ready to %v for player %d", p.Ready, p.PlayerID)
 			sys.PlayerReady[p.PlayerID] = !sys.PlayerReady[p.PlayerID]
 		}
 	}
@@ -283,7 +284,12 @@ func (t *TurnChange) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *TurnSystem:
-			log.Infof("Setting turn back to players")
+			if t.PlayersTurn {
+				log.Info("Beginning player turn")
+			} else {
+				log.Info("Beginning enemy turn")
+			}
+
 			sys.PlayersTurn = t.PlayersTurn
 		}
 	}
@@ -501,6 +507,25 @@ func (e *UnequipItem) Process(w *ecs.World, dt float32) bool {
 			if e.CreatureId == sys.input.player.NetworkID {
 				log.Info("updating inv ui")
 				sys.UpdatePlayerDisplay()
+			}
+		}
+	}
+	return true
+}
+
+type EnemyTurn struct{}
+
+// Decide the enemy actions on the host to avoid desync
+func (e *EnemyTurn) Process(w *ecs.World, dt float32) bool {
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *EventSystem:
+			if sys.serverRoom != nil {
+				actions := ProcessEnemyTurn(w)
+				actions = append(actions, &TurnChange{true})
+				sys.outgoing <- NetworkMessage{
+					Events: actions,
+				}
 			}
 		}
 	}
