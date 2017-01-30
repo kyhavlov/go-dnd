@@ -392,7 +392,7 @@ func (move *Move) Process(w *ecs.World, dt float32) bool {
 type UseSkill struct {
 	SkillName string
 	Source    structs.NetworkID
-	Target    structs.NetworkID
+	Target    structs.SkillTarget
 }
 
 func (e *UseSkill) Name() string { return fmt.Sprintf("Using skill: %s", e.SkillName) }

@@ -86,6 +86,7 @@ skill "Cleave" {
 
   min_range = 1
   max_range = 1
+  targets_ground = true
 
   damage = 10
   stamina_cost = 10
@@ -104,6 +105,7 @@ skill "Ice Storm" {
 
   min_range = 0
   max_range = 5
+  targets_ground = true
 
   damage = 10
   stamina_cost = 15

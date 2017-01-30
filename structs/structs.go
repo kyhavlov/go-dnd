@@ -147,8 +147,9 @@ type Skill struct {
 
 	Icon int
 
-	MinRange int `hcl:"min_range"`
-	MaxRange int `hcl:"max_range"`
+	MinRange      int  `hcl:"min_range"`
+	MaxRange      int  `hcl:"max_range"`
+	TargetsGround bool `hcl:"targets_ground"`
 
 	Damage      int
 	StaminaCost int `hcl:"stamina_cost"`
@@ -166,3 +167,8 @@ type StatModifiers struct {
 
 const CleaveEffect = "hits_perpendicular"
 const AoeEffect = "aoe_radius"
+
+type SkillTarget struct {
+	ID       NetworkID
+	Location GridPoint
+}

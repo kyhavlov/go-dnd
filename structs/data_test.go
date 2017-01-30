@@ -137,6 +137,7 @@ skill "Fireball" {
 
   min_range = 1
   max_range = 5
+  targets_ground = true
 
   damage = 10
   stamina_cost = 10
@@ -151,12 +152,13 @@ skill "Fireball" {
 }`
 
 	expected := Skill{
-		Name:        "Fireball",
-		Icon:        2761,
-		MinRange:    1,
-		MaxRange:    5,
-		Damage:      10,
-		StaminaCost: 10,
+		Name:          "Fireball",
+		Icon:          2761,
+		MinRange:      1,
+		MaxRange:      5,
+		TargetsGround: true,
+		Damage:        10,
+		StaminaCost:   10,
 		DamageBonuses: StatModifiers{
 			Int: 0.2,
 		},

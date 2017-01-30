@@ -178,12 +178,23 @@ func (input *InputSystem) Update(dt float32) {
 			}
 
 			skills := input.player.GetSkills()
-			if target := input.mapSystem.GetCreatureAt(gridPoint); target != nil && len(skills) > i {
-				if CanUseSkill(skills[i], input.mapSystem, input.player.NetworkID, target.NetworkID, &playerEffectivePos) {
+			if len(skills) > i && input.mapSystem.GetTileAt(gridPoint) != nil {
+				skill := skills[i]
+				targetCreature := input.mapSystem.GetCreatureAt(gridPoint)
+				skillTarget := structs.SkillTarget{}
+				if structs.GetSkillData(skill).TargetsGround {
+					skillTarget.Location = gridPoint
+				} else {
+					if targetCreature == nil {
+						continue
+					}
+					skillTarget.ID = targetCreature.NetworkID
+				}
+				if CanUseSkill(skill, input.mapSystem, input.player.NetworkID, skillTarget, &playerEffectivePos) {
 					input.outgoing <- NetworkMessage{
 						Events: []Event{&PlayerAction{
 							PlayerID: input.PlayerID,
-							Action:   &UseSkill{skills[i], input.player.NetworkID, target.NetworkID},
+							Action:   &UseSkill{skills[i], input.player.NetworkID, skillTarget},
 						}},
 					}
 				} else {

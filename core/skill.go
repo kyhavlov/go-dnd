@@ -5,32 +5,45 @@ import (
 	"github.com/kyhavlov/go-dnd/structs"
 )
 
-func CanUseSkill(name string, sys *MapSystem, sourceID, targetID structs.NetworkID, sourceLoc *structs.GridPoint) bool {
+func GetSkillTargetLocation(target structs.SkillTarget, sys *MapSystem) structs.GridPoint {
+	loc := target.Location
+	if target.ID != 0 {
+		targetCreature := sys.Creatures[target.ID]
+		loc = structs.PointToGridPoint(targetCreature.Position)
+	}
+	return loc
+}
+
+func CanUseSkill(name string, sys *MapSystem, sourceID structs.NetworkID, target structs.SkillTarget, sourceLoc *structs.GridPoint) bool {
 	skill := structs.GetSkillData(name)
 	source := sys.Creatures[sourceID]
-	target := sys.Creatures[targetID]
+	a := structs.PointToGridPoint(source.SpaceComponent.Position)
+	if sourceLoc != nil {
+		a = *sourceLoc
+	}
+	b := GetSkillTargetLocation(target, sys)
 
 	if source.Stamina < skill.StaminaCost {
 		return false
 	}
 
-	a := structs.PointToGridPoint(source.SpaceComponent.Position)
-	if sourceLoc != nil {
-		a = *sourceLoc
-	}
-	b := structs.PointToGridPoint(target.SpaceComponent.Position)
-
 	return a.DistanceTo(b) >= skill.MinRange && a.DistanceTo(b) <= skill.MaxRange
 }
 
-func PerformSkillActions(name string, sys *MapSystem, sourceID, targetID structs.NetworkID) {
+func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID, target structs.SkillTarget) {
+	// Get skill data and source creature
 	skill := structs.GetSkillData(name)
 	source := sys.Creatures[sourceID]
-	target := sys.Creatures[targetID]
-	a := structs.PointToGridPoint(source.SpaceComponent.Position)
-	b := structs.PointToGridPoint(target.SpaceComponent.Position)
+	var targets []*structs.Creature
 
-	targets := []*structs.Creature{target}
+	// Get locations of source and target
+	a := structs.PointToGridPoint(source.SpaceComponent.Position)
+	b := target.Location
+	if target.ID != 0 {
+		targetCreature := sys.Creatures[target.ID]
+		b = structs.PointToGridPoint(targetCreature.Position)
+		targets = append(targets, targetCreature)
+	}
 
 	// Add extra targets if the skill has the cleave effect
 	if _, ok := skill.Effects[structs.CleaveEffect]; ok {
@@ -65,13 +78,13 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID, targetID structs
 		for i := 0; i < radius*2+1; i++ {
 			for j := 0; j < radius*2+1; j++ {
 				creature := sys.GetCreatureAt(current)
-				if creature != nil && creature.NetworkID != target.NetworkID {
+				if creature != nil {
 					targets = append(targets, creature)
 				}
 				current.Y++
 			}
 			current.X++
-			current.Y-= radius*2+1
+			current.Y -= radius*2 + 1
 		}
 	}
 

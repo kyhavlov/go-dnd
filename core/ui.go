@@ -120,12 +120,12 @@ func (us *UiSystem) AddActionIndicator(action Event, playerID PlayerID, mapSyste
 		us.AddActionIndicators(playerID, lines)
 	case *UseSkill:
 		source := action.Source
-		target := action.Target
+		target := GetSkillTargetLocation(action.Target, mapSystem)
 		sourceCircle := &UiElement{BasicEntity: ecs.NewBasic()}
 		sourceCircle.SpaceComponent = common.SpaceComponent{Position: mapSystem.Creatures[source].Position, Width: structs.TileWidth, Height: structs.TileWidth}
 		sourceCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
 		targetCircle := &UiElement{BasicEntity: ecs.NewBasic()}
-		targetCircle.SpaceComponent = common.SpaceComponent{Position: mapSystem.Creatures[target].Position, Width: structs.TileWidth, Height: structs.TileWidth}
+		targetCircle.SpaceComponent = common.SpaceComponent{Position: target.ToPixels(), Width: structs.TileWidth, Height: structs.TileWidth}
 		targetCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
 		us.AddActionIndicators(playerID, []*UiElement{sourceCircle, targetCircle})
 	case *PickupItem:
