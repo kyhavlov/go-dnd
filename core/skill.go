@@ -5,7 +5,7 @@ import (
 	"github.com/kyhavlov/go-dnd/structs"
 )
 
-func CanUseSkill(name string, sys *MapSystem, sourceID, targetID structs.NetworkID) bool {
+func CanUseSkill(name string, sys *MapSystem, sourceID, targetID structs.NetworkID, sourceLoc *structs.GridPoint) bool {
 	skill := structs.GetSkillData(name)
 	source := sys.Creatures[sourceID]
 	target := sys.Creatures[targetID]
@@ -15,6 +15,9 @@ func CanUseSkill(name string, sys *MapSystem, sourceID, targetID structs.Network
 	}
 
 	a := structs.PointToGridPoint(source.SpaceComponent.Position)
+	if sourceLoc != nil {
+		a = *sourceLoc
+	}
 	b := structs.PointToGridPoint(target.SpaceComponent.Position)
 
 	return a.DistanceTo(b) >= skill.MinRange && a.DistanceTo(b) <= skill.MaxRange

@@ -270,6 +270,9 @@ func (p *PlayerReady) Process(w *ecs.World, dt float32) bool {
 		switch sys := system.(type) {
 		case *TurnSystem:
 			sys.PlayerReady[p.PlayerID] = !sys.PlayerReady[p.PlayerID]
+			if _, ok := sys.PlayerActions[p.PlayerID]; !ok {
+				sys.PlayerActions[p.PlayerID] = nil
+			}
 		}
 	}
 	return true
@@ -415,6 +418,10 @@ func (p *PickupItem) Process(w *ecs.World, dt float32) bool {
 		switch sys := system.(type) {
 		case *MapSystem:
 			item := sys.Items[p.ItemId]
+			// If the item is already picked up, exit early
+			if !item.OnGround {
+				return true
+			}
 			creature := sys.Creatures[p.CreatureId]
 			// put the item in the first empty inventory slot
 			for i, slot := range creature.Inventory {

@@ -121,12 +121,10 @@ func (input *InputSystem) Update(dt float32) {
 	}
 
 	if engo.Input.Button(ReadyKey).JustPressed() && input.turn.PlayersTurn {
-		if input.turn.PlayerActions[input.PlayerID] != nil {
-			input.outgoing <- NetworkMessage{
-				Events: []Event{&PlayerReady{
-					PlayerID: input.PlayerID,
-				}},
-			}
+		input.outgoing <- NetworkMessage{
+			Events: []Event{&PlayerReady{
+				PlayerID: input.PlayerID,
+			}},
 		}
 	}
 
@@ -181,7 +179,7 @@ func (input *InputSystem) Update(dt float32) {
 
 			skills := input.player.GetSkills()
 			if target := input.mapSystem.GetCreatureAt(gridPoint); target != nil && len(skills) > i {
-				if CanUseSkill(skills[i], input.mapSystem, input.player.NetworkID, target.NetworkID) {
+				if CanUseSkill(skills[i], input.mapSystem, input.player.NetworkID, target.NetworkID, &playerEffectivePos) {
 					input.outgoing <- NetworkMessage{
 						Events: []Event{&PlayerAction{
 							PlayerID: input.PlayerID,

@@ -66,11 +66,6 @@ func (ts *TurnSystem) Update(dt float32) {
 				allReady = false
 			}
 		}
-		for _, action := range ts.PlayerActions {
-			if action == nil {
-				allReady = false
-			}
-		}
 
 		if allReady {
 			playerCount := len(ts.PlayerActions)
