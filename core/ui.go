@@ -93,17 +93,71 @@ func (us *UiSystem) New(w *ecs.World) {
 	}
 }
 
-func (us *UiSystem) UpdateActionIndicator(player PlayerID, elems []*UiElement) {
+func (us *UiSystem) AddActionIndicator(action Event, playerID PlayerID, mapSystem *MapSystem) {
+	switch action := action.(type) {
+	case *Move:
+		var lines []*UiElement
+		for i := 0; i < len(action.Path)-1; i++ {
+			line := UiElement{BasicEntity: ecs.NewBasic()}
+			current := action.Path[i].ToPixels()
+			next := action.Path[i+1].ToPixels()
+			start := current
+			if current.X > next.X || current.Y > next.Y {
+				start = next
+			}
+			w := float32(3)
+			h := float32(3)
+			if current.X != next.X {
+				w = structs.TileWidth
+			} else {
+				h = structs.TileWidth
+			}
+			offset := -4 + float32(playerID*5)
+			line.SpaceComponent = common.SpaceComponent{Position: engo.Point{start.X + structs.TileWidth/2 + offset, start.Y + structs.TileWidth/2 + offset}, Width: w, Height: h}
+			line.RenderComponent = common.RenderComponent{Drawable: common.Rectangle{}, Color: color.RGBA{0, 255, 0 + uint8(playerID*255), 255}}
+			lines = append(lines, &line)
+		}
+		us.AddActionIndicators(playerID, lines)
+	case *UseSkill:
+		source := action.Source
+		target := action.Target
+		sourceCircle := &UiElement{BasicEntity: ecs.NewBasic()}
+		sourceCircle.SpaceComponent = common.SpaceComponent{Position: mapSystem.Creatures[source].Position, Width: structs.TileWidth, Height: structs.TileWidth}
+		sourceCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
+		targetCircle := &UiElement{BasicEntity: ecs.NewBasic()}
+		targetCircle.SpaceComponent = common.SpaceComponent{Position: mapSystem.Creatures[target].Position, Width: structs.TileWidth, Height: structs.TileWidth}
+		targetCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
+		us.AddActionIndicators(playerID, []*UiElement{sourceCircle, targetCircle})
+	case *PickupItem:
+		itemCircle := &UiElement{BasicEntity: ecs.NewBasic()}
+		itemCircle.SpaceComponent = common.SpaceComponent{Width: structs.TileWidth, Height: structs.TileWidth}
+		itemCircle.SpaceComponent.Position.X = mapSystem.Items[action.ItemId].Position.X - structs.TileWidth/4
+		itemCircle.SpaceComponent.Position.Y = mapSystem.Items[action.ItemId].Position.Y - structs.TileWidth/4
+		itemCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{0, 255, 0, 255}}, Color: color.Transparent}
+		creatureCircle := &UiElement{BasicEntity: ecs.NewBasic()}
+		creatureCircle.SpaceComponent = common.SpaceComponent{Position: mapSystem.Creatures[action.CreatureId].Position, Width: structs.TileWidth, Height: structs.TileWidth}
+		creatureCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{0, 255, 0, 255}}, Color: color.Transparent}
+		us.AddActionIndicators(playerID, []*UiElement{itemCircle, creatureCircle})
+	case *EquipItem, *UnequipItem:
+		us.AddActionIndicators(playerID, []*UiElement{})
+	}
+}
+
+func (us *UiSystem) AddActionIndicators(player PlayerID, elems []*UiElement) {
+	for _, elem := range elems {
+		us.render.Add(&elem.BasicEntity, &elem.RenderComponent, &elem.SpaceComponent)
+	}
+	us.actionIndicators[player] = append(us.actionIndicators[player], elems...)
+}
+
+func (us *UiSystem) ResetActionIndicators(player PlayerID) {
 	prev, ok := us.actionIndicators[player]
 	if ok {
 		for _, elem := range prev {
 			us.render.Remove(elem.BasicEntity)
 		}
 	}
-	for _, elem := range elems {
-		us.render.Add(&elem.BasicEntity, &elem.RenderComponent, &elem.SpaceComponent)
-	}
-	us.actionIndicators[player] = elems
+	us.actionIndicators[player] = nil
 }
 
 // Update the items shown in the inventory display slots
@@ -261,23 +315,26 @@ func (us *UiSystem) setupReadyIndicators(sys *TurnSystem, font *common.Font, pla
 
 		us.Add(&readyStatus.BasicEntity, &readyStatus)
 
-		actionStatus := DynamicText{BasicEntity: ecs.NewBasic()}
-		actionStatus.RenderComponent.Drawable = common.Text{
-			Font: font,
-		}
-		actionStatus.SetShader(common.HUDShader)
-		actionStatus.SpaceComponent.Position.Set(24, float32(138+(i*72)))
-		actionStatus.RenderComponent.SetZIndex(2)
-		actionStatus.UpdateFunc = func() string {
-			actionStatus.RenderComponent.Color = color.White
-			action := sys.PlayerActions[PlayerID(playerNum-1)]
-			if action != nil {
-				return "  - " + action.(NamedEvent).Name()
+		for j := 0; j < 2; j++ {
+			actionStatus := DynamicText{BasicEntity: ecs.NewBasic()}
+			actionStatus.RenderComponent.Drawable = common.Text{
+				Font: font,
 			}
-			return ""
-		}
+			actionStatus.SetShader(common.HUDShader)
+			actionStatus.SpaceComponent.Position.Set(24, float32(138+(i*72)+(j*18)))
+			actionStatus.RenderComponent.SetZIndex(2)
+			actionNum := j
+			actionStatus.UpdateFunc = func() string {
+				actionStatus.RenderComponent.Color = color.White
+				if len(sys.PlayerActions[PlayerID(playerNum-1)]) > actionNum {
+					action := sys.PlayerActions[PlayerID(playerNum-1)][actionNum]
+					return "  - " + action.(NamedEvent).Name()
+				}
+				return ""
+			}
 
-		us.Add(&actionStatus.BasicEntity, &actionStatus)
+			us.Add(&actionStatus.BasicEntity, &actionStatus)
+		}
 	}
 }
 

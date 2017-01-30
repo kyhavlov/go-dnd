@@ -8,7 +8,6 @@ import (
 type EventSystem struct {
 	world *ecs.World
 
-	eventHistory []Event
 	activeEvents []Event
 
 	incoming   chan NetworkMessage
@@ -20,12 +19,11 @@ type EventSystem struct {
 func (es *EventSystem) New(w *ecs.World) {}
 
 func (es *EventSystem) Update(dt float32) {
-	// Process currently active events in order, in serial, stopping if one can't complete
+	// Process currently active events serially, stopping if one can't complete
 	for i := 0; i < len(es.activeEvents); i++ {
 		event := es.activeEvents[0]
 
 		if event.Process(es.world, dt) {
-			es.eventHistory = append(es.eventHistory, event)
 			es.activeEvents = es.activeEvents[1:]
 		} else {
 			break

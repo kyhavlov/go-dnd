@@ -10,7 +10,6 @@ import (
 	"github.com/engoengine/math"
 	"github.com/kyhavlov/go-dnd/mapgen"
 	"github.com/kyhavlov/go-dnd/structs"
-	"image/color"
 )
 
 // Event is the interface for things which affect world state, such as
@@ -27,6 +26,7 @@ func RegisterEvents() {
 	gob.Register(&SetPlayerID{})
 	gob.Register(&NewPlayer{})
 	gob.Register(&PlayerAction{})
+	gob.Register(&ResetPlayerActions{})
 	gob.Register(&PlayerReady{})
 	gob.Register(&TurnChange{})
 	gob.Register(&Move{})
@@ -183,66 +183,79 @@ type PlayerAction struct {
 }
 
 func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
-	var move *MapSystem
+	var mapSystem *MapSystem
+	var ui *UiSystem
+
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *UiSystem:
+			ui = sys
+		}
+	}
+
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *TurnSystem:
-			//log.Debugf("Setting action %v for player %d", reflect.TypeOf(p.Action), p.PlayerID)
-			sys.PlayerActions[p.PlayerID] = p.Action
+			// Check that the action type is valid based on what they already have locked in
+			switch p.Action.(type) {
+			case *Move:
+				if !sys.PlayerHasMove(p.PlayerID) {
+					ui.ResetActionIndicators(p.PlayerID)
+					switch sys.PlayerActions[p.PlayerID][0].(type) {
+					case *Move:
+						sys.PlayerActions[p.PlayerID][0] = p.Action
+						sys.PlayerActions[p.PlayerID] = sys.PlayerActions[p.PlayerID][:1]
+					default:
+						sys.PlayerActions[p.PlayerID][1] = p.Action
+					}
+					for _, action := range sys.PlayerActions[p.PlayerID] {
+						ui.AddActionIndicator(action, p.PlayerID, mapSystem)
+					}
+				} else {
+					sys.PlayerActions[p.PlayerID] = append(sys.PlayerActions[p.PlayerID], p.Action)
+					ui.AddActionIndicator(p.Action, p.PlayerID, mapSystem)
+				}
+			default:
+				if (sys.PlayerHasMove(p.PlayerID) && len(sys.PlayerActions[p.PlayerID]) == 1) || len(sys.PlayerActions[p.PlayerID]) == 2 {
+					ui.ResetActionIndicators(p.PlayerID)
+					switch sys.PlayerActions[p.PlayerID][0].(type) {
+					case *Move:
+						sys.PlayerActions[p.PlayerID][1] = p.Action
+					default:
+						sys.PlayerActions[p.PlayerID][0] = p.Action
+					}
+					for _, action := range sys.PlayerActions[p.PlayerID] {
+						ui.AddActionIndicator(action, p.PlayerID, mapSystem)
+					}
+				} else {
+					sys.PlayerActions[p.PlayerID] = append(sys.PlayerActions[p.PlayerID], p.Action)
+					ui.AddActionIndicator(p.Action, p.PlayerID, mapSystem)
+				}
+			}
 		case *MapSystem:
-			move = sys
+			mapSystem = sys
+		}
+	}
+
+	return true
+}
+
+type ResetPlayerActions struct {
+	PlayerID PlayerID
+}
+
+func (e *ResetPlayerActions) Process(w *ecs.World, dt float32) bool {
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *TurnSystem:
+			sys.PlayerActions[e.PlayerID] = nil
+			sys.PlayerReady[e.PlayerID] = false
 		}
 	}
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *UiSystem:
-			switch action := p.Action.(type) {
-			case *Move:
-				var lines []*UiElement
-				for i := 0; i < len(action.Path)-1; i++ {
-					line := UiElement{BasicEntity: ecs.NewBasic()}
-					current := action.Path[i].ToPixels()
-					next := action.Path[i+1].ToPixels()
-					start := current
-					if current.X > next.X || current.Y > next.Y {
-						start = next
-					}
-					w := float32(3)
-					h := float32(3)
-					if current.X != next.X {
-						w = structs.TileWidth
-					} else {
-						h = structs.TileWidth
-					}
-					offset := -4 + float32(p.PlayerID*5)
-					line.SpaceComponent = common.SpaceComponent{Position: engo.Point{start.X + structs.TileWidth/2 + offset, start.Y + structs.TileWidth/2 + offset}, Width: w, Height: h}
-					line.RenderComponent = common.RenderComponent{Drawable: common.Rectangle{}, Color: color.RGBA{0, 255, 0 + uint8(p.PlayerID*255), 255}}
-					lines = append(lines, &line)
-				}
-				sys.UpdateActionIndicator(p.PlayerID, lines)
-			case *UseSkill:
-				source := action.Source
-				target := action.Target
-				sourceCircle := &UiElement{BasicEntity: ecs.NewBasic()}
-				sourceCircle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[source].Position, Width: structs.TileWidth, Height: structs.TileWidth}
-				sourceCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
-				targetCircle := &UiElement{BasicEntity: ecs.NewBasic()}
-				targetCircle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[target].Position, Width: structs.TileWidth, Height: structs.TileWidth}
-				targetCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
-				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{sourceCircle, targetCircle})
-			case *PickupItem:
-				itemCircle := &UiElement{BasicEntity: ecs.NewBasic()}
-				itemCircle.SpaceComponent = common.SpaceComponent{Width: structs.TileWidth, Height: structs.TileWidth}
-				itemCircle.SpaceComponent.Position.X = move.Items[action.ItemId].Position.X - structs.TileWidth/4
-				itemCircle.SpaceComponent.Position.Y = move.Items[action.ItemId].Position.Y - structs.TileWidth/4
-				itemCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{0, 255, 0, 255}}, Color: color.Transparent}
-				creatureCircle := &UiElement{BasicEntity: ecs.NewBasic()}
-				creatureCircle.SpaceComponent = common.SpaceComponent{Position: move.Creatures[action.CreatureId].Position, Width: structs.TileWidth, Height: structs.TileWidth}
-				creatureCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{0, 255, 0, 255}}, Color: color.Transparent}
-				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{itemCircle, creatureCircle})
-			case *EquipItem, *UnequipItem:
-				sys.UpdateActionIndicator(p.PlayerID, []*UiElement{})
-			}
+			sys.ResetActionIndicators(e.PlayerID)
 		}
 	}
 	return true

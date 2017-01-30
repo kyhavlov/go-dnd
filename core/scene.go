@@ -59,8 +59,6 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	event := &EventSystem{
 		world: world,
 
-		eventHistory: make([]Event, 0),
-
 		incoming:   scene.incoming,
 		outgoing:   scene.outgoing,
 		serverRoom: scene.serverRoom,

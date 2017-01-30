@@ -26,6 +26,7 @@ type InputSystem struct {
 }
 
 const ReadyKey = "ready"
+const ResetKey = "reset"
 
 // New is the initialisation of the System
 func (input *InputSystem) New(w *ecs.World) {
@@ -34,6 +35,7 @@ func (input *InputSystem) New(w *ecs.World) {
 	input.mouseTracker.SpaceComponent = common.SpaceComponent{}
 
 	engo.Input.RegisterButton(ReadyKey, engo.R)
+	engo.Input.RegisterButton(ResetKey, engo.F)
 
 	engo.Input.RegisterButton(string(EquipmentHotkeys[0]), engo.G)
 	engo.Input.RegisterButton(string(EquipmentHotkeys[1]), engo.H)
@@ -69,16 +71,25 @@ func (input *InputSystem) New(w *ecs.World) {
 }
 
 func (input *InputSystem) Update(dt float32) {
-	// One of three things can happen on left click: move, attack or pick up item
+	var playerEffectivePos structs.GridPoint
+	if input.player != nil {
+		playerEffectivePos = structs.PointToGridPoint(input.player.SpaceComponent.Position)
+		if input.turn.PlayerMovingFirst(input.PlayerID) {
+			path := input.turn.PlayerActions[input.PlayerID][0].(*Move).Path
+			playerEffectivePos = path[len(path)-1]
+		}
+	}
+
+	// One of two things can happen on left click: move or pick up item
 	if input.mouseTracker.MouseComponent.Clicked && input.player != nil && input.turn.PlayersTurn && !input.turn.PlayerReady[input.PlayerID] {
 		gridPoint := structs.GridPoint{
 			X: int(input.mouseTracker.MouseComponent.MouseX / structs.TileWidth),
 			Y: int(input.mouseTracker.MouseComponent.MouseY / structs.TileWidth),
 		}
 
-		// If the target is occupied by an enemy, try to attack
 		if input.mapSystem.GetTileAt(gridPoint) != nil {
-			if items := input.mapSystem.GetItemsAt(gridPoint); len(items) > 0 && items[0].OnGround {
+			// Try to pick up an item if we'll be on top of it, otherwise try to move to the square
+			if items := input.mapSystem.GetItemsAt(gridPoint); len(items) > 0 && items[0].OnGround && playerEffectivePos.DistanceTo(gridPoint) == 0 {
 				input.outgoing <- NetworkMessage{
 					Events: []Event{&PlayerAction{
 						PlayerID: input.PlayerID,
@@ -113,6 +124,16 @@ func (input *InputSystem) Update(dt float32) {
 		if input.turn.PlayerActions[input.PlayerID] != nil {
 			input.outgoing <- NetworkMessage{
 				Events: []Event{&PlayerReady{
+					PlayerID: input.PlayerID,
+				}},
+			}
+		}
+	}
+
+	if engo.Input.Button(ResetKey).JustPressed() && input.turn.PlayersTurn {
+		if input.turn.PlayerActions[input.PlayerID] != nil {
+			input.outgoing <- NetworkMessage{
+				Events: []Event{&ResetPlayerActions{
 					PlayerID: input.PlayerID,
 				}},
 			}
