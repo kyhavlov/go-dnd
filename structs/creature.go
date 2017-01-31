@@ -119,3 +119,12 @@ func (c *Creature) GetEffectiveIntelligence() int {
 	}
 	return intelligence
 }
+
+func (c *Creature) HasIncreasedMeleeRange() bool {
+	for _, item := range c.Equipment {
+		if item != nil && item.GrantsIncreasedMeleeRange {
+			return true
+		}
+	}
+	return false
+}

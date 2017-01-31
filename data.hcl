@@ -2,7 +2,7 @@
 item "Sapphire Staff" {
   slot = "weapon"
   icon = 1734
-  skills = ["Fireball", "Cleave", "Ice Storm"]
+  skills = ["Fireball", "Ice Storm"]
   bonus {
     int = 12
     stamina_regen = 3
@@ -21,7 +21,8 @@ item "Leather Armor" {
 item "Ice Spear" {
   slot = "weapon"
   icon = 1836
-  skills = ["Frozen Lance"]
+  skills = ["Frozen Lance", "Cleave"]
+  increases_melee_range = true
   bonus {
     int = 10
     str = 5
@@ -75,6 +76,8 @@ skill "Basic Attack" {
   damage_bonuses {
     str = 0.1
   }
+
+  tags = ["melee"]
 }
 
 skill "Fireball" {
@@ -143,6 +146,8 @@ skill "Frozen Lance" {
   }
 
   effects {
-    pierces = 2
+    pierces = 1
   }
+
+  tags = ["melee"]
 }

@@ -68,6 +68,8 @@ type Item struct {
 
 	Skills []string
 
+	GrantsIncreasedMeleeRange bool `hcl:"increases_melee_range"`
+
 	Requirements StatComponent `hcl:"reqs"`
 	Bonuses      StatComponent `hcl:"bonus"`
 }
@@ -156,6 +158,17 @@ type Skill struct {
 	DamageBonuses StatModifiers `hcl:"damage_bonuses"`
 
 	Effects map[string]int
+
+	Tags []string
+}
+
+func (s *Skill) HasTag(tag string) bool {
+	for _, t := range s.Tags {
+		if t == tag {
+			return true
+		}
+	}
+	return false
 }
 
 type StatModifiers struct {
@@ -167,6 +180,8 @@ type StatModifiers struct {
 const CleaveEffect = "hits_perpendicular"
 const PierceEffect = "pierces"
 const AoeEffect = "aoe_radius"
+
+const MeleeTag = "melee"
 
 type SkillTarget struct {
 	ID       NetworkID

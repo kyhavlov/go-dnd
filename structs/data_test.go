@@ -11,6 +11,7 @@ item "Sapphire Staff" {
   slot = "weapon"
   icon = 2345
   skills = ["fireball", "ice-armor"]
+  increases_melee_range = true
   reqs {
     str = 20
     dex = 21
@@ -31,6 +32,7 @@ item "Sapphire Staff" {
 		Slot:   "weapon",
 		Icon:   2345,
 		Skills: []string{"fireball", "ice-armor"},
+		GrantsIncreasedMeleeRange: true,
 		Requirements: StatComponent{
 			Strength:     20,
 			Dexterity:    21,
@@ -149,6 +151,8 @@ skill "Fireball" {
   effects {
     hits_perpendicular = 1
   }
+
+  tags = ["melee"]
 }`
 
 	expected := Skill{
@@ -163,6 +167,7 @@ skill "Fireball" {
 			Int: 0.2,
 		},
 		Effects: map[string]int{"hits_perpendicular": 1},
+		Tags:    []string{"melee"},
 	}
 
 	data, err := ParseItems(raw)

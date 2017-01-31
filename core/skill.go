@@ -2,6 +2,7 @@ package core
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/engoengine/math/imath"
 	"github.com/kyhavlov/go-dnd/structs"
 )
 
@@ -27,7 +28,12 @@ func CanUseSkill(name string, sys *MapSystem, sourceID structs.NetworkID, target
 		return false
 	}
 
-	return a.DistanceTo(b) >= skill.MinRange && a.DistanceTo(b) <= skill.MaxRange
+	maxRange := skill.MaxRange
+	if skill.HasTag(structs.MeleeTag) {
+		maxRange += 1
+	}
+
+	return a.DistanceTo(b) >= skill.MinRange && a.DistanceTo(b) <= maxRange
 }
 
 func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID, target structs.SkillTarget) {
@@ -93,11 +99,17 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID
 	// Add extra targets from piercing
 	if pierceDistance, ok := skill.Effects[structs.PierceEffect]; ok {
 		for i := 1; i <= pierceDistance; i++ {
-			xDiff := i * (targetLoc.X - sourceLoc.X)
+			xDiff := targetLoc.X - sourceLoc.X
+			if xDiff != 0 {
+				xDiff = imath.Abs(xDiff) / xDiff
+			}
 			yDiff := i * (targetLoc.Y - sourceLoc.Y)
+			if yDiff != 0 {
+				yDiff = imath.Abs(yDiff) / yDiff
+			}
 			currentLoc := structs.GridPoint{
-				X: targetLoc.X + xDiff,
-				Y: targetLoc.Y + yDiff,
+				X: targetLoc.X + i*xDiff,
+				Y: targetLoc.Y + i*yDiff,
 			}
 			creature := sys.GetCreatureAt(currentLoc)
 			if creature != nil {
