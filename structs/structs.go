@@ -12,11 +12,11 @@ import (
 const SpritesheetPath = "textures/dungeon2x.png"
 const TileWidth = 64
 
-var sprites *common.Spritesheet
+var Sprites *common.Spritesheet
 
 func LoadSprites() {
 	engo.Files.Load(SpritesheetPath)
-	sprites = common.NewSpritesheetFromFile(SpritesheetPath, TileWidth, TileWidth)
+	Sprites = common.NewSpritesheetFromFile(SpritesheetPath, TileWidth, TileWidth)
 }
 
 const MinBrightness = 80
@@ -82,7 +82,7 @@ func NewItem(name string, coords GridPoint) *Item {
 		Height:   TileWidth,
 	}
 	item.RenderComponent = common.RenderComponent{
-		Drawable: sprites.Cell(item.Icon),
+		Drawable: Sprites.Cell(item.Icon),
 		Scale:    engo.Point{0.5, 0.5},
 	}
 
@@ -131,7 +131,7 @@ func NewTile(name string, coords GridPoint) *Tile {
 	}
 	sprite := tile.Icons[rand.Intn(len(tile.Icons))]
 	tile.RenderComponent = common.RenderComponent{
-		Drawable: sprites.Cell(sprite),
+		Drawable: Sprites.Cell(sprite),
 		Color:    color.Alpha{MinBrightness},
 		Scale:    engo.Point{1, 1},
 	}

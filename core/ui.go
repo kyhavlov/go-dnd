@@ -64,9 +64,9 @@ func (us *UiSystem) Update(dt float32) {
 	}
 }
 
-func (us *UiSystem) Add(e *ecs.BasicEntity, text *DynamicText) {
+func (us *UiSystem) Add(e *ecs.BasicEntity, text *DynamicText, space *common.SpaceComponent) {
 	us.dynamicTexts[e] = text
-	us.render.Add(e, &text.RenderComponent, &text.SpaceComponent)
+	us.render.Add(e, &text.RenderComponent, space)
 }
 
 func (us *UiSystem) Remove(entity ecs.BasicEntity) {
@@ -313,7 +313,7 @@ func (us *UiSystem) setupReadyIndicators(sys *TurnSystem, font *common.Font, pla
 			return fmt.Sprintf("Player %d: %v", playerNum, status)
 		}
 
-		us.Add(&readyStatus.BasicEntity, &readyStatus)
+		us.Add(&readyStatus.BasicEntity, &readyStatus, &readyStatus.SpaceComponent)
 
 		for j := 0; j < 2; j++ {
 			actionStatus := DynamicText{BasicEntity: ecs.NewBasic()}
@@ -333,9 +333,40 @@ func (us *UiSystem) setupReadyIndicators(sys *TurnSystem, font *common.Font, pla
 				return ""
 			}
 
-			us.Add(&actionStatus.BasicEntity, &actionStatus)
+			us.Add(&actionStatus.BasicEntity, &actionStatus, &actionStatus.SpaceComponent)
 		}
 	}
+}
+
+func (us *UiSystem) SetupCreatureLifeDisplay(creature *structs.Creature) {
+	// Add the life icon
+	lifeIcon := common.RenderComponent{
+		Drawable: structs.Sprites.Cell(structs.LifeIcon),
+		Scale:    engo.Point{1.0, 1.0},
+	}
+	lifeIcon.SetZIndex(2)
+	us.render.Add(&creature.LifeIcon, &lifeIcon, &creature.SpaceComponent)
+
+	// Add the life text
+	fnt := &common.Font{
+		URL:  "fonts/Gamegirl.ttf",
+		FG:   color.White,
+		Size: 12,
+	}
+	err := fnt.CreatePreloaded()
+	if err != nil {
+		panic(err)
+	}
+
+	lifeDisplay := DynamicText{}
+	lifeDisplay.RenderComponent.Drawable = common.Text{
+		Font: fnt,
+	}
+	lifeDisplay.RenderComponent.SetZIndex(3)
+	lifeDisplay.UpdateFunc = func() string {
+		return fmt.Sprintf("\n\n\n\n\n%d", creature.Life)
+	}
+	us.Add(&creature.LifeDisplay, &lifeDisplay, &creature.SpaceComponent)
 }
 
 func (us *UiSystem) SetupStatsDisplay(world *ecs.World) {
@@ -384,7 +415,7 @@ func (us *UiSystem) SetupStatsDisplay(world *ecs.World) {
 	lifeDisplay.UpdateFunc = func() string {
 		return fmt.Sprintf("Life:    %d/%d", us.input.player.Life, us.input.player.GetEffectiveMaxLife())
 	}
-	us.Add(&lifeDisplay.BasicEntity, &lifeDisplay)
+	us.Add(&lifeDisplay.BasicEntity, &lifeDisplay, &lifeDisplay.SpaceComponent)
 
 	staminaDisplay := DynamicText{BasicEntity: ecs.NewBasic()}
 	staminaDisplay.RenderComponent.Drawable = common.Text{
@@ -396,7 +427,7 @@ func (us *UiSystem) SetupStatsDisplay(world *ecs.World) {
 	staminaDisplay.UpdateFunc = func() string {
 		return fmt.Sprintf("Stamina: %d/%d", us.input.player.Stamina, us.input.player.MaxStamina)
 	}
-	us.Add(&staminaDisplay.BasicEntity, &staminaDisplay)
+	us.Add(&staminaDisplay.BasicEntity, &staminaDisplay, &staminaDisplay.SpaceComponent)
 
 	statDisplay := DynamicText{BasicEntity: ecs.NewBasic()}
 	statDisplay.RenderComponent.Drawable = common.Text{
@@ -409,5 +440,5 @@ func (us *UiSystem) SetupStatsDisplay(world *ecs.World) {
 		return fmt.Sprintf("Str %d  Dex %d  Int %d", us.input.player.GetEffectiveStrength(),
 			us.input.player.GetEffectiveDexterity(), us.input.player.GetEffectiveIntelligence())
 	}
-	us.Add(&statDisplay.BasicEntity, &statDisplay)
+	us.Add(&statDisplay.BasicEntity, &statDisplay, &statDisplay.SpaceComponent)
 }

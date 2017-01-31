@@ -76,6 +76,10 @@ func (ms *MapSystem) RemoveCreature(creature *structs.Creature) {
 		switch sys := system.(type) {
 		case *common.RenderSystem:
 			sys.Remove(creature.BasicEntity)
+			sys.Remove(creature.LifeIcon)
+			sys.Remove(creature.LifeDisplay)
+		case *UiSystem:
+			sys.Remove(creature.BasicEntity)
 		}
 	}
 }

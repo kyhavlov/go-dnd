@@ -22,6 +22,8 @@ func AddCreature(w *ecs.World, creature *structs.Creature) {
 			sys.Add(&creature.BasicEntity, &creature.RenderComponent, &creature.SpaceComponent)
 		case *MapSystem:
 			sys.AddCreature(creature)
+		case *UiSystem:
+			sys.SetupCreatureLifeDisplay(creature)
 		}
 	}
 }
