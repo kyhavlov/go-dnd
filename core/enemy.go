@@ -41,6 +41,9 @@ func ProcessCreatureTurn(creature *structs.Creature, sys *MapSystem) Event {
 	var closest *structs.Creature
 	dist := 9999
 	for _, player := range sys.Players {
+		if player.Dead {
+			continue
+		}
 		a := sys.GetTileAt(structs.PointToGridPoint(creature.Position))
 		b := sys.GetTileAt(structs.PointToGridPoint(player.Position))
 		path := GetPath(a, b, sys.Tiles, sys.CreatureLocations, TeamAny)

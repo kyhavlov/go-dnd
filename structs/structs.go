@@ -81,7 +81,6 @@ func NewItem(name string, coords GridPoint) *Item {
 		Width:    TileWidth,
 		Height:   TileWidth,
 	}
-	item.SpaceComponent.Position.Add(engo.Point{TileWidth / 4, TileWidth / 4})
 	item.RenderComponent = common.RenderComponent{
 		Drawable: sprites.Cell(item.Icon),
 		Scale:    engo.Point{0.5, 0.5},

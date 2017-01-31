@@ -81,7 +81,6 @@ func (scene *DungeonScene) Setup(world *ecs.World) {
 	world.AddSystem(mapSystem)
 	world.AddSystem(&LightSystem{})
 	world.AddSystem(turn)
-	world.AddSystem(&HealthSystem{})
 }
 
 // If we're the server, initialize a new server room and start listening for connections.

@@ -71,8 +71,20 @@ func (input *InputSystem) New(w *ecs.World) {
 }
 
 func (input *InputSystem) Update(dt float32) {
+	if engo.Input.Button(ReadyKey).JustPressed() && input.turn.PlayersTurn {
+		input.outgoing <- NetworkMessage{
+			Events: []Event{&PlayerReady{
+				PlayerID: input.PlayerID,
+			}},
+		}
+	}
+
 	var playerEffectivePos structs.GridPoint
 	if input.player != nil {
+		if input.player.Dead {
+			return
+		}
+
 		playerEffectivePos = structs.PointToGridPoint(input.player.SpaceComponent.Position)
 		if input.turn.PlayerMovingFirst(input.PlayerID) {
 			path := input.turn.PlayerActions[input.PlayerID][0].(*Move).Path
@@ -117,14 +129,6 @@ func (input *InputSystem) Update(dt float32) {
 					log.Info("Tried to move too far")
 				}
 			}
-		}
-	}
-
-	if engo.Input.Button(ReadyKey).JustPressed() && input.turn.PlayersTurn {
-		input.outgoing <- NetworkMessage{
-			Events: []Event{&PlayerReady{
-				PlayerID: input.PlayerID,
-			}},
 		}
 	}
 

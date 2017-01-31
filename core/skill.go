@@ -40,7 +40,11 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID
 	a := structs.PointToGridPoint(source.SpaceComponent.Position)
 	b := target.Location
 	if target.ID != 0 {
-		targetCreature := sys.Creatures[target.ID]
+		targetCreature, ok := sys.Creatures[target.ID]
+		// if the target creature died before the skill could be used, whiff and do nothing
+		if !ok {
+			return
+		}
 		b = structs.PointToGridPoint(targetCreature.Position)
 		targets = append(targets, targetCreature)
 	}
@@ -95,6 +99,9 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID
 		damage += int(skill.DamageBonuses.Int * float64(source.GetEffectiveIntelligence()))
 		t.Life -= damage
 		log.Infof("Creature id %d took %d damage from %s, at %d life now", t.NetworkID, damage, name, t.Life)
+		if t.Life <= 0 {
+			sys.RemoveCreature(t)
+		}
 	}
 
 	source.Stamina -= skill.StaminaCost
