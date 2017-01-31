@@ -76,19 +76,17 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID
 
 	// Add extra targets in radius
 	if radius, ok := skill.Effects[structs.AoeEffect]; ok {
-		current := b
-		current.X -= radius
-		current.Y -= radius
 		for i := 0; i < radius*2+1; i++ {
 			for j := 0; j < radius*2+1; j++ {
+				current := structs.GridPoint{
+					X: b.X - radius + i,
+					Y: b.Y - radius + j,
+				}
 				creature := sys.GetCreatureAt(current)
 				if creature != nil {
 					targets = append(targets, creature)
 				}
-				current.Y++
 			}
-			current.X++
-			current.Y -= radius*2 + 1
 		}
 	}
 
