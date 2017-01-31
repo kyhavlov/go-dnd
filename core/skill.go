@@ -57,26 +57,33 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID
 
 	// Add extra targets if the skill has the cleave effect
 	if _, ok := skill.Effects[structs.CleaveEffect]; ok {
-		if sourceLoc.X == targetLoc.X {
-			left := sys.GetCreatureAt(structs.GridPoint{targetLoc.X - 1, targetLoc.Y})
-			right := sys.GetCreatureAt(structs.GridPoint{targetLoc.X + 1, targetLoc.Y})
+		if creature := sys.GetCreatureAt(targetLoc); creature != nil {
+			targets = append(targets, creature)
+		}
 
-			if left != nil {
-				targets = append(targets, left)
-			}
-			if right != nil {
-				targets = append(targets, right)
-			}
-		} else {
-			top := sys.GetCreatureAt(structs.GridPoint{targetLoc.X, targetLoc.Y - 1})
-			bottom := sys.GetCreatureAt(structs.GridPoint{targetLoc.X, targetLoc.Y + 1})
+		xDiff := targetLoc.X - sourceLoc.X
+		if xDiff != 0 {
+			xDiff = imath.Abs(xDiff) / xDiff
+		}
 
-			if top != nil {
-				targets = append(targets, top)
-			}
-			if bottom != nil {
-				targets = append(targets, bottom)
-			}
+		yDiff := targetLoc.Y - sourceLoc.Y
+		if yDiff != 0 {
+			yDiff = imath.Abs(yDiff) / yDiff
+		}
+
+		target1 := structs.GridPoint{
+			X: targetLoc.X + yDiff,
+			Y: targetLoc.Y - xDiff,
+		}
+		if creature := sys.GetCreatureAt(target1); creature != nil {
+			targets = append(targets, creature)
+		}
+		target2 := structs.GridPoint{
+			X: targetLoc.X - yDiff,
+			Y: targetLoc.Y + xDiff,
+		}
+		if creature := sys.GetCreatureAt(target2); creature != nil {
+			targets = append(targets, creature)
 		}
 	}
 
@@ -103,7 +110,7 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID
 			if xDiff != 0 {
 				xDiff = imath.Abs(xDiff) / xDiff
 			}
-			yDiff := i * (targetLoc.Y - sourceLoc.Y)
+			yDiff := targetLoc.Y - sourceLoc.Y
 			if yDiff != 0 {
 				yDiff = imath.Abs(yDiff) / yDiff
 			}

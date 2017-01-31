@@ -111,6 +111,8 @@ skill "Cleave" {
   effects {
     hits_perpendicular = 1
   }
+
+  tags = ["melee"]
 }
 
 skill "Ice Storm" {
