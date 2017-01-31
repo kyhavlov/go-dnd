@@ -95,6 +95,13 @@ func (gs GameStart) Process(w *ecs.World, dt float32) bool {
 	armor.OnGround = true
 	AddItem(w, armor)
 
+	spear := structs.NewItem("Ice Spear", structs.GridPoint{
+		X: level.StartLoc.X + 2,
+		Y: level.StartLoc.Y + 2,
+	})
+	spear.OnGround = true
+	AddItem(w, spear)
+
 	return true
 }
 

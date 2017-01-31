@@ -165,6 +165,7 @@ type StatModifiers struct {
 }
 
 const CleaveEffect = "hits_perpendicular"
+const PierceEffect = "pierces"
 const AoeEffect = "aoe_radius"
 
 type SkillTarget struct {

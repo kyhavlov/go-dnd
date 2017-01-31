@@ -18,6 +18,16 @@ item "Leather Armor" {
   }
 }
 
+item "Ice Spear" {
+  slot = "weapon"
+  icon = 1836
+  skills = ["Frozen Lance"]
+  bonus {
+    int = 10
+    str = 5
+  }
+}
+
 // Creatures
 creature "Player" {
   icon = 594
@@ -116,5 +126,23 @@ skill "Ice Storm" {
 
   effects {
     aoe_radius = 1
+  }
+}
+
+skill "Frozen Lance" {
+  icon = 2781
+
+  min_range = 1
+  max_range = 1
+
+  damage = 10
+  stamina_cost = 12
+
+  damage_bonuses {
+    int = 0.2
+  }
+
+  effects {
+    pierces = 2
   }
 }

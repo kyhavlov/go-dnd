@@ -37,23 +37,23 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID
 	var targets []*structs.Creature
 
 	// Get locations of source and target
-	a := structs.PointToGridPoint(source.SpaceComponent.Position)
-	b := target.Location
+	sourceLoc := structs.PointToGridPoint(source.SpaceComponent.Position)
+	targetLoc := target.Location
 	if target.ID != 0 {
 		targetCreature, ok := sys.Creatures[target.ID]
 		// if the target creature died before the skill could be used, whiff and do nothing
 		if !ok {
 			return
 		}
-		b = structs.PointToGridPoint(targetCreature.Position)
+		targetLoc = structs.PointToGridPoint(targetCreature.Position)
 		targets = append(targets, targetCreature)
 	}
 
 	// Add extra targets if the skill has the cleave effect
 	if _, ok := skill.Effects[structs.CleaveEffect]; ok {
-		if a.X == b.X {
-			left := sys.GetCreatureAt(structs.GridPoint{b.X - 1, b.Y})
-			right := sys.GetCreatureAt(structs.GridPoint{b.X + 1, b.Y})
+		if sourceLoc.X == targetLoc.X {
+			left := sys.GetCreatureAt(structs.GridPoint{targetLoc.X - 1, targetLoc.Y})
+			right := sys.GetCreatureAt(structs.GridPoint{targetLoc.X + 1, targetLoc.Y})
 
 			if left != nil {
 				targets = append(targets, left)
@@ -62,8 +62,8 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID
 				targets = append(targets, right)
 			}
 		} else {
-			top := sys.GetCreatureAt(structs.GridPoint{b.X, b.Y - 1})
-			bottom := sys.GetCreatureAt(structs.GridPoint{b.X, b.Y + 1})
+			top := sys.GetCreatureAt(structs.GridPoint{targetLoc.X, targetLoc.Y - 1})
+			bottom := sys.GetCreatureAt(structs.GridPoint{targetLoc.X, targetLoc.Y + 1})
 
 			if top != nil {
 				targets = append(targets, top)
@@ -78,14 +78,30 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID
 	if radius, ok := skill.Effects[structs.AoeEffect]; ok {
 		for i := 0; i < radius*2+1; i++ {
 			for j := 0; j < radius*2+1; j++ {
-				current := structs.GridPoint{
-					X: b.X - radius + i,
-					Y: b.Y - radius + j,
+				currentLoc := structs.GridPoint{
+					X: targetLoc.X - radius + i,
+					Y: targetLoc.Y - radius + j,
 				}
-				creature := sys.GetCreatureAt(current)
+				creature := sys.GetCreatureAt(currentLoc)
 				if creature != nil {
 					targets = append(targets, creature)
 				}
+			}
+		}
+	}
+
+	// Add extra targets from piercing
+	if pierceDistance, ok := skill.Effects[structs.PierceEffect]; ok {
+		for i := 1; i <= pierceDistance; i++ {
+			xDiff := i * (targetLoc.X - sourceLoc.X)
+			yDiff := i * (targetLoc.Y - sourceLoc.Y)
+			currentLoc := structs.GridPoint{
+				X: targetLoc.X + xDiff,
+				Y: targetLoc.Y + yDiff,
+			}
+			creature := sys.GetCreatureAt(currentLoc)
+			if creature != nil {
+				targets = append(targets, creature)
 			}
 		}
 	}
