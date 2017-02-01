@@ -121,7 +121,6 @@ func (us *UiSystem) AddActionIndicator(action Event, playerID PlayerID, mapSyste
 	case *UseSkill:
 		source := action.Source
 		targets := GetSkillTargets(action.SkillName, mapSystem, action.Source, action.Target, sourceLoc)
-		log.Infof("Getting skill targets in ui for source loc: %v, %v", sourceLoc, targets)
 		var uiElements []*UiElement
 
 		sourceCircle := &UiElement{BasicEntity: ecs.NewBasic()}
@@ -131,7 +130,7 @@ func (us *UiSystem) AddActionIndicator(action Event, playerID PlayerID, mapSyste
 
 		for _, target := range targets {
 			targetCircle := &UiElement{BasicEntity: ecs.NewBasic()}
-			targetCircle.SpaceComponent = common.SpaceComponent{Position: target.Position, Width: structs.TileWidth, Height: structs.TileWidth}
+			targetCircle.SpaceComponent = common.SpaceComponent{Position: target.ToPixels(), Width: structs.TileWidth, Height: structs.TileWidth}
 			targetCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
 			uiElements = append(uiElements, targetCircle)
 		}

@@ -36,8 +36,9 @@ func CanUseSkill(name string, sys *MapSystem, sourceID structs.NetworkID, target
 	return a.DistanceTo(b) >= skill.MinRange && a.DistanceTo(b) <= maxRange
 }
 
-func GetSkillTargets(name string, sys *MapSystem, sourceID structs.NetworkID, target structs.SkillTarget, sourceLoc *structs.GridPoint) []*structs.Creature {
-	var targets []*structs.Creature
+// Returns a list of the target GridPoints that will be checked by this skill
+func GetSkillTargets(name string, sys *MapSystem, sourceID structs.NetworkID, target structs.SkillTarget, sourceLoc *structs.GridPoint) []structs.GridPoint {
+	var targets []structs.GridPoint
 	skill := structs.GetSkillData(name)
 	source := sys.Creatures[sourceID]
 
@@ -54,14 +55,12 @@ func GetSkillTargets(name string, sys *MapSystem, sourceID structs.NetworkID, ta
 			return nil
 		}
 		targetLoc = structs.PointToGridPoint(targetCreature.Position)
-		targets = append(targets, targetCreature)
+		targets = append(targets, targetLoc)
 	}
 
 	// Add extra targets if the skill has the cleave effect
 	if _, ok := skill.Effects[structs.CleaveEffect]; ok {
-		if creature := sys.GetCreatureAt(targetLoc); creature != nil {
-			targets = append(targets, creature)
-		}
+		targets = append(targets, targetLoc)
 
 		xDiff := targetLoc.X - sourceLoc.X
 		if xDiff != 0 {
@@ -73,34 +72,24 @@ func GetSkillTargets(name string, sys *MapSystem, sourceID structs.NetworkID, ta
 			yDiff = imath.Abs(yDiff) / yDiff
 		}
 
-		target1 := structs.GridPoint{
+		targets = append(targets, structs.GridPoint{
 			X: targetLoc.X + yDiff,
 			Y: targetLoc.Y - xDiff,
-		}
-		if creature := sys.GetCreatureAt(target1); creature != nil {
-			targets = append(targets, creature)
-		}
-		target2 := structs.GridPoint{
+		})
+		targets = append(targets, structs.GridPoint{
 			X: targetLoc.X - yDiff,
 			Y: targetLoc.Y + xDiff,
-		}
-		if creature := sys.GetCreatureAt(target2); creature != nil {
-			targets = append(targets, creature)
-		}
+		})
 	}
 
 	// Add extra targets in radius
 	if radius, ok := skill.Effects[structs.AoeEffect]; ok {
 		for i := 0; i < radius*2+1; i++ {
 			for j := 0; j < radius*2+1; j++ {
-				currentLoc := structs.GridPoint{
+				targets = append(targets, structs.GridPoint{
 					X: targetLoc.X - radius + i,
 					Y: targetLoc.Y - radius + j,
-				}
-				creature := sys.GetCreatureAt(currentLoc)
-				if creature != nil {
-					targets = append(targets, creature)
-				}
+				})
 			}
 		}
 	}
@@ -116,14 +105,10 @@ func GetSkillTargets(name string, sys *MapSystem, sourceID structs.NetworkID, ta
 			if yDiff != 0 {
 				yDiff = imath.Abs(yDiff) / yDiff
 			}
-			currentLoc := structs.GridPoint{
+			targets = append(targets, structs.GridPoint{
 				X: targetLoc.X + i*xDiff,
 				Y: targetLoc.Y + i*yDiff,
-			}
-			creature := sys.GetCreatureAt(currentLoc)
-			if creature != nil {
-				targets = append(targets, creature)
-			}
+			})
 		}
 	}
 
@@ -135,7 +120,13 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID
 	skill := structs.GetSkillData(name)
 	source := sys.Creatures[sourceID]
 
-	targets := GetSkillTargets(name, sys, sourceID, target, nil)
+	targetLocs := GetSkillTargets(name, sys, sourceID, target, nil)
+	var targets []*structs.Creature
+	for _, loc := range targetLocs {
+		if creature := sys.GetCreatureAt(loc); creature != nil {
+			targets = append(targets, creature)
+		}
+	}
 
 	for _, t := range targets {
 		damage := skill.Damage

@@ -23,6 +23,11 @@ type NetworkSystem struct {
 	myPlayerId       int
 }
 
+func (ns *NetworkSystem) New(w *ecs.World) {
+	// Start this at one so a zero NetworkID means "not set"
+	ns.networkIdCounter = 1
+}
+
 func (ns *NetworkSystem) nextId() structs.NetworkID {
 	ns.networkIdCounter += 1
 	return ns.networkIdCounter
