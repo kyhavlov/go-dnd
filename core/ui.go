@@ -93,7 +93,7 @@ func (us *UiSystem) New(w *ecs.World) {
 	}
 }
 
-func (us *UiSystem) AddActionIndicator(action Event, playerID PlayerID, mapSystem *MapSystem) {
+func (us *UiSystem) AddActionIndicator(action Event, playerID PlayerID, mapSystem *MapSystem, sourceLoc *structs.GridPoint) {
 	switch action := action.(type) {
 	case *Move:
 		var lines []*UiElement
@@ -120,14 +120,23 @@ func (us *UiSystem) AddActionIndicator(action Event, playerID PlayerID, mapSyste
 		us.AddActionIndicators(playerID, lines)
 	case *UseSkill:
 		source := action.Source
-		target := GetSkillTargetLocation(action.Target, mapSystem)
+		targets := GetSkillTargets(action.SkillName, mapSystem, action.Source, action.Target, sourceLoc)
+		log.Infof("Getting skill targets in ui for source loc: %v, %v", sourceLoc, targets)
+		var uiElements []*UiElement
+
 		sourceCircle := &UiElement{BasicEntity: ecs.NewBasic()}
 		sourceCircle.SpaceComponent = common.SpaceComponent{Position: mapSystem.Creatures[source].Position, Width: structs.TileWidth, Height: structs.TileWidth}
 		sourceCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
-		targetCircle := &UiElement{BasicEntity: ecs.NewBasic()}
-		targetCircle.SpaceComponent = common.SpaceComponent{Position: target.ToPixels(), Width: structs.TileWidth, Height: structs.TileWidth}
-		targetCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
-		us.AddActionIndicators(playerID, []*UiElement{sourceCircle, targetCircle})
+		uiElements = []*UiElement{sourceCircle}
+
+		for _, target := range targets {
+			targetCircle := &UiElement{BasicEntity: ecs.NewBasic()}
+			targetCircle.SpaceComponent = common.SpaceComponent{Position: target.Position, Width: structs.TileWidth, Height: structs.TileWidth}
+			targetCircle.RenderComponent = common.RenderComponent{Drawable: common.Circle{BorderWidth: 3, BorderColor: color.RGBA{255, 0, 0, 255}}, Color: color.Transparent}
+			uiElements = append(uiElements, targetCircle)
+		}
+
+		us.AddActionIndicators(playerID, uiElements)
 	case *PickupItem:
 		itemCircle := &UiElement{BasicEntity: ecs.NewBasic()}
 		itemCircle.SpaceComponent = common.SpaceComponent{Width: structs.TileWidth, Height: structs.TileWidth}

@@ -70,7 +70,7 @@ skill "Basic Attack" {
   min_range = 1
   max_range = 1
 
-  damage = 10
+  damage = 0
   stamina_cost = 5
 
   damage_bonuses {

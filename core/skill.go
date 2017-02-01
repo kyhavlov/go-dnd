@@ -33,25 +33,25 @@ func CanUseSkill(name string, sys *MapSystem, sourceID structs.NetworkID, target
 		maxRange += 1
 	}
 
-	log.Infof("Checking source vs target: %v, %v", a, b)
-
 	return a.DistanceTo(b) >= skill.MinRange && a.DistanceTo(b) <= maxRange
 }
 
-func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID, target structs.SkillTarget) {
-	// Get skill data and source creature
+func GetSkillTargets(name string, sys *MapSystem, sourceID structs.NetworkID, target structs.SkillTarget, sourceLoc *structs.GridPoint) []*structs.Creature {
+	var targets []*structs.Creature
 	skill := structs.GetSkillData(name)
 	source := sys.Creatures[sourceID]
-	var targets []*structs.Creature
 
 	// Get locations of source and target
-	sourceLoc := structs.PointToGridPoint(source.SpaceComponent.Position)
+	if sourceLoc == nil {
+		pos := structs.PointToGridPoint(source.SpaceComponent.Position)
+		sourceLoc = &pos
+	}
 	targetLoc := target.Location
 	if target.ID != 0 {
 		targetCreature, ok := sys.Creatures[target.ID]
 		// if the target creature died before the skill could be used, whiff and do nothing
 		if !ok {
-			return
+			return nil
 		}
 		targetLoc = structs.PointToGridPoint(targetCreature.Position)
 		targets = append(targets, targetCreature)
@@ -126,6 +126,16 @@ func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID
 			}
 		}
 	}
+
+	return targets
+}
+
+func PerformSkillActions(name string, sys *MapSystem, sourceID structs.NetworkID, target structs.SkillTarget) {
+	// Get skill data and source creature
+	skill := structs.GetSkillData(name)
+	source := sys.Creatures[sourceID]
+
+	targets := GetSkillTargets(name, sys, sourceID, target, nil)
 
 	for _, t := range targets {
 		damage := skill.Damage

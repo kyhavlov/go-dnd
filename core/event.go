@@ -199,6 +199,8 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 		switch sys := system.(type) {
 		case *UiSystem:
 			ui = sys
+		case *MapSystem:
+			mapSystem = sys
 		}
 	}
 
@@ -218,31 +220,36 @@ func (p *PlayerAction) Process(w *ecs.World, dt float32) bool {
 						sys.PlayerActions[p.PlayerID][1] = p.Action
 					}
 					for _, action := range sys.PlayerActions[p.PlayerID] {
-						ui.AddActionIndicator(action, p.PlayerID, mapSystem)
+						ui.AddActionIndicator(action, p.PlayerID, mapSystem, nil)
 					}
 				} else {
 					sys.PlayerActions[p.PlayerID] = append(sys.PlayerActions[p.PlayerID], p.Action)
-					ui.AddActionIndicator(p.Action, p.PlayerID, mapSystem)
+					ui.AddActionIndicator(p.Action, p.PlayerID, mapSystem, nil)
 				}
 			default:
+				effectiveSourceLoc := structs.PointToGridPoint(mapSystem.Players[p.PlayerID].Position)
 				if (sys.PlayerHasMove(p.PlayerID) && len(sys.PlayerActions[p.PlayerID]) == 1) || len(sys.PlayerActions[p.PlayerID]) == 2 {
 					ui.ResetActionIndicators(p.PlayerID)
 					switch sys.PlayerActions[p.PlayerID][0].(type) {
 					case *Move:
 						sys.PlayerActions[p.PlayerID][1] = p.Action
+						path := sys.PlayerActions[p.PlayerID][0].(*Move).Path
+						effectiveSourceLoc = path[len(path)-1]
 					default:
 						sys.PlayerActions[p.PlayerID][0] = p.Action
 					}
 					for _, action := range sys.PlayerActions[p.PlayerID] {
-						ui.AddActionIndicator(action, p.PlayerID, mapSystem)
+						ui.AddActionIndicator(action, p.PlayerID, mapSystem, &effectiveSourceLoc)
 					}
 				} else {
+					if !sys.PlayerHasMove(p.PlayerID) {
+						path := sys.PlayerActions[p.PlayerID][0].(*Move).Path
+						effectiveSourceLoc = path[len(path)-1]
+					}
 					sys.PlayerActions[p.PlayerID] = append(sys.PlayerActions[p.PlayerID], p.Action)
-					ui.AddActionIndicator(p.Action, p.PlayerID, mapSystem)
+					ui.AddActionIndicator(p.Action, p.PlayerID, mapSystem, &effectiveSourceLoc)
 				}
 			}
-		case *MapSystem:
-			mapSystem = sys
 		}
 	}
 
