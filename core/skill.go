@@ -29,9 +29,11 @@ func CanUseSkill(name string, sys *MapSystem, sourceID structs.NetworkID, target
 	}
 
 	maxRange := skill.MaxRange
-	if skill.HasTag(structs.MeleeTag) {
+	if skill.HasTag(structs.MeleeTag) && source.HasIncreasedMeleeRange() {
 		maxRange += 1
 	}
+
+	log.Infof("Checking source vs target: %v, %v", a, b)
 
 	return a.DistanceTo(b) >= skill.MinRange && a.DistanceTo(b) <= maxRange
 }

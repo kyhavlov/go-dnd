@@ -35,9 +35,6 @@ func (es *EventSystem) Update(dt float32) {
 		if ok {
 			for _, event := range message.Events {
 				es.activeEvents = append(es.activeEvents, event)
-				if es.serverRoom != nil {
-					//log.Infof("Sending event to all clients: %v", reflect.TypeOf(event))
-				}
 			}
 			if es.serverRoom != nil {
 				es.serverRoom.SendToAllClients(message)

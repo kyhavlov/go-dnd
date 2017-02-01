@@ -10,6 +10,7 @@ import (
 	"github.com/engoengine/math"
 	"github.com/kyhavlov/go-dnd/mapgen"
 	"github.com/kyhavlov/go-dnd/structs"
+	"sort"
 )
 
 // Event is the interface for things which affect world state, such as
@@ -34,6 +35,7 @@ func RegisterEvents() {
 	gob.Register(&PickupItem{})
 	gob.Register(&EquipItem{})
 	gob.Register(&UnequipItem{})
+	gob.Register(&EnemyTurn{})
 }
 
 // Starts the game, generating the map from the given seed
@@ -407,7 +409,9 @@ func (e *UseSkill) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *MapSystem:
-			PerformSkillActions(e.SkillName, sys, e.Source, e.Target)
+			if CanUseSkill(e.SkillName, sys, e.Source, e.Target, nil) {
+				PerformSkillActions(e.SkillName, sys, e.Source, e.Target)
+			}
 		}
 	}
 
@@ -540,19 +544,73 @@ func (e *UnequipItem) Process(w *ecs.World, dt float32) bool {
 	return true
 }
 
-type EnemyTurn struct{}
+type EnemyTurnStart struct{}
 
-// Decide the enemy actions on the host to avoid desync
+// Decide the turn order of the enemies based on sorted NetworkIDs
+func (e *EnemyTurnStart) Process(w *ecs.World, dt float32) bool {
+	var creatures []int
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *MapSystem:
+			for _, creature := range sys.Creatures {
+				if !creature.IsPlayerTeam {
+					creatures = append(creatures, int(creature.NetworkID))
+				}
+			}
+		}
+	}
+	sort.Ints(creatures)
+
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *TurnSystem:
+			sys.enemyTurnOrder = creatures
+			if len(creatures) > 0 {
+				sys.event.AddEvents(&EnemyTurn{creatures[0]})
+			} else {
+				sys.event.AddEvents(&TurnChange{true})
+			}
+		}
+	}
+	return true
+}
+
+type EnemyTurn struct {
+	Index int
+}
+
+// Get the actions for the current enemy and either queue up the event for the
+// next enemy or change the turn back to the players if this is the last enemy.
 func (e *EnemyTurn) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *EventSystem:
-			if sys.serverRoom != nil {
-				actions := ProcessEnemyTurn(w)
+			if sys.serverRoom == nil {
+				return true
+			}
+		}
+	}
+
+	var turnOrder []int
+	var turn *TurnSystem
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *TurnSystem:
+			turnOrder = sys.enemyTurnOrder
+			turn = sys
+		}
+	}
+	for _, system := range w.Systems() {
+		switch sys := system.(type) {
+		case *MapSystem:
+			actions := ProcessCreatureTurn(structs.NetworkID(turnOrder[e.Index]), sys)
+			if e.Index < len(turnOrder)-1 {
+				actions = append(actions, &EnemyTurn{e.Index + 1})
+			} else {
 				actions = append(actions, &TurnChange{true})
-				sys.outgoing <- NetworkMessage{
-					Events: actions,
-				}
+			}
+			turn.event.outgoing <- NetworkMessage{
+				Events: actions,
 			}
 		}
 	}

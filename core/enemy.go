@@ -1,52 +1,24 @@
 package core
 
 import (
-	"engo.io/ecs"
 	"github.com/kyhavlov/go-dnd/structs"
-	"sort"
 )
-
-func ProcessEnemyTurn(w *ecs.World) []Event {
-	var actions []Event
-	var creatures []int
-	var mapSys *MapSystem
-
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *MapSystem:
-			for _, creature := range sys.Creatures {
-				if !creature.IsPlayerTeam {
-					creatures = append(creatures, int(creature.NetworkID))
-				}
-			}
-			mapSys = sys
-		}
-	}
-	sort.Ints(creatures)
-
-	for _, id := range creatures {
-		creature := mapSys.Creatures[structs.NetworkID(id)]
-		action := ProcessCreatureTurn(creature, mapSys)
-		if action != nil {
-			actions = append(actions, action)
-		}
-	}
-
-	return actions
-}
 
 const ActivationRange = 10
 
-func ProcessCreatureTurn(creature *structs.Creature, sys *MapSystem) Event {
+func ProcessCreatureTurn(id structs.NetworkID, sys *MapSystem) []Event {
+	creature := sys.Creatures[id]
 	var closest *structs.Creature
+	creatureTile := sys.GetTileAt(structs.PointToGridPoint(creature.Position))
 	dist := 9999
+	// Find the closest player
 	for _, player := range sys.Players {
 		if player.Dead {
 			continue
 		}
-		a := sys.GetTileAt(structs.PointToGridPoint(creature.Position))
+
 		b := sys.GetTileAt(structs.PointToGridPoint(player.Position))
-		path := GetPath(a, b, sys.Tiles, sys.CreatureLocations, TeamAny)
+		path := GetPath(creatureTile, b, sys.Tiles, sys.CreatureLocations, TeamAny)
 		if len(path) < dist {
 			dist = len(path)
 			closest = player
@@ -61,21 +33,47 @@ func ProcessCreatureTurn(creature *structs.Creature, sys *MapSystem) Event {
 		}
 	}
 
+	// Get potential squares around the target player to move to
 	target := structs.PointToGridPoint(closest.Position)
-	target.Y += 1
-
-	if sys.GetTileAt(target) != nil && sys.GetCreatureAt(target) == nil {
-		a := sys.GetTileAt(structs.PointToGridPoint(creature.Position))
-		b := sys.GetTileAt(target)
-		path := GetPath(a, b, sys.Tiles, sys.CreatureLocations, TeamEnemy)
-		if len(path) > creature.Movement {
-			path = path[:creature.Movement]
+	neighbors := getNeighbors(sys.GetTileAt(target), sys.Tiles, func(x, y int) bool { return true })
+	var path []structs.GridPoint
+	shortestPath := 9999
+	for _, neighbor := range neighbors {
+		if sys.GetCreatureAt(neighbor.GridPoint) != nil {
+			continue
 		}
-		return &Move{
-			Id:   creature.NetworkID,
-			Path: path,
+		currentPath := GetPath(creatureTile, neighbor, sys.Tiles, sys.CreatureLocations, TeamEnemy)
+		if len(currentPath) > 0 && len(currentPath) < shortestPath {
+			path = currentPath
+			shortestPath = len(path)
 		}
 	}
 
-	return nil
+	if len(path) > creature.Movement {
+		path = path[:creature.Movement]
+	}
+	var actions []Event
+	if len(path) > 0 {
+		actions = append(actions, &Move{
+			Id:   creature.NetworkID,
+			Path: path,
+		})
+	}
+
+	// Try to use the creature's first skill
+	skill := structs.GetSkillData(creature.GetSkills()[0])
+	skillTarget := structs.SkillTarget{ID: closest.NetworkID}
+	effectiveLoc := creatureTile.GridPoint
+	if len(path) > 0 {
+		effectiveLoc = path[len(path)-1]
+	}
+	if CanUseSkill(skill.Name, sys, creature.NetworkID, skillTarget, &effectiveLoc) {
+		actions = append(actions, &UseSkill{
+			SkillName: skill.Name,
+			Source:    creature.NetworkID,
+			Target:    skillTarget,
+		})
+	}
+
+	return actions
 }

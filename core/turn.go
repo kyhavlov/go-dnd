@@ -12,6 +12,8 @@ type TurnSystem struct {
 
 	event *EventSystem
 	ui    *UiSystem
+
+	enemyTurnOrder []int
 }
 
 func (ts *TurnSystem) IsPlayerReady(id PlayerID) bool {
@@ -78,7 +80,7 @@ func (ts *TurnSystem) Update(dt float32) {
 				ts.event.AddEvents(playerEvents...)
 			}
 			ts.event.AddEvents(&TurnChange{false})
-			ts.event.AddEvents(&EnemyTurn{})
+			ts.event.AddEvents(&EnemyTurnStart{})
 			for i := 0; i < playerCount; i++ {
 				ts.PlayerActions[PlayerID(i)] = nil
 				ts.PlayerReady[PlayerID(i)] = false

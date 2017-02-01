@@ -117,6 +117,7 @@ func GetPath(start, goal *structs.Tile, tiles [][]*structs.Tile, creatures [][]*
 		}
 	}
 
+	// Couldn't find a path, exhausted the search, return an empty list
 	return path
 }
 
