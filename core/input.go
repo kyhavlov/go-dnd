@@ -108,6 +108,7 @@ func (input *InputSystem) Update(dt float32) {
 						Action: &PickupItem{
 							ItemId:     items[0].NetworkID,
 							CreatureId: input.player.NetworkID,
+							ItemName:   items[0].Name,
 						},
 					}},
 				}
@@ -144,13 +145,14 @@ func (input *InputSystem) Update(dt float32) {
 
 	for i := 0; i < structs.InventorySize; i++ {
 		if engo.Input.Button(string(InventoryHotkeys[i])).JustPressed() && input.turn.PlayersTurn && !input.turn.PlayerReady[input.PlayerID] {
-			if input.player.Inventory[i] != nil {
+			if input.player.Inventory[i] != nil && input.player.CanEquipItem(input.player.Inventory[i]) {
 				input.outgoing <- NetworkMessage{
 					Events: []Event{&PlayerAction{
 						PlayerID: input.PlayerID,
 						Action: &EquipItem{
 							InventorySlot: i,
 							CreatureId:    input.player.NetworkID,
+							ItemName:      input.player.Inventory[i].Name,
 						}},
 					},
 				}
@@ -167,6 +169,7 @@ func (input *InputSystem) Update(dt float32) {
 						Action: &UnequipItem{
 							EquipSlot:  i,
 							CreatureId: input.player.NetworkID,
+							ItemName:   input.player.Equipment[i].Name,
 						}},
 					},
 				}

@@ -5,7 +5,6 @@ import (
 	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/engoengine/math"
 	"github.com/kyhavlov/go-dnd/mapgen"
@@ -411,7 +410,7 @@ type UseSkill struct {
 	Target    structs.SkillTarget
 }
 
-func (e *UseSkill) Name() string { return fmt.Sprintf("Using skill: %s", e.SkillName) }
+func (e *UseSkill) Name() string { return "Using skill: " + e.SkillName }
 func (e *UseSkill) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
@@ -428,9 +427,10 @@ func (e *UseSkill) Process(w *ecs.World, dt float32) bool {
 type PickupItem struct {
 	ItemId     structs.NetworkID
 	CreatureId structs.NetworkID
+	ItemName   string
 }
 
-func (p *PickupItem) Name() string { return "Picking up item" }
+func (p *PickupItem) Name() string { return "Picking up item: " + p.ItemName }
 func (p *PickupItem) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
@@ -481,9 +481,10 @@ func (p *PickupItem) Process(w *ecs.World, dt float32) bool {
 type EquipItem struct {
 	InventorySlot int
 	CreatureId    structs.NetworkID
+	ItemName      string
 }
 
-func (e *EquipItem) Name() string { return "Equipping item" }
+func (e *EquipItem) Name() string { return "Equipping item: " + e.ItemName }
 func (e *EquipItem) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
@@ -515,9 +516,10 @@ func (e *EquipItem) Process(w *ecs.World, dt float32) bool {
 type UnequipItem struct {
 	EquipSlot  int
 	CreatureId structs.NetworkID
+	ItemName   string
 }
 
-func (e *UnequipItem) Name() string { return "Unequip item" }
+func (e *UnequipItem) Name() string { return "Unequip item: " + e.ItemName }
 func (e *UnequipItem) Process(w *ecs.World, dt float32) bool {
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {

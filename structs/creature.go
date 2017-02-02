@@ -128,3 +128,18 @@ func (c *Creature) HasIncreasedMeleeRange() bool {
 	}
 	return false
 }
+
+func (c *Creature) CanEquipItem(item *Item) bool {
+	if c.GetEffectiveStrength() < item.Requirements.Strength {
+		return false
+	}
+	if c.GetEffectiveDexterity() < item.Requirements.Dexterity {
+		return false
+	}
+	if c.GetEffectiveIntelligence() < item.Requirements.Intelligence {
+		return false
+	}
+
+
+	return true
+}
