@@ -3,10 +3,83 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "atuFM+Af3aM8NyjKXuWqMigivao=",
+			"path": "engo.io/ecs",
+			"revision": "95e9cb668349043e78cfe2bc6bb3aca12b0b6507",
+			"revisionTime": "2016-07-07T17:40:54Z"
+		},
+		{
+			"checksumSHA1": "Mid/aS/+Vw73q2NP2swGD9wJ0PM=",
+			"path": "engo.io/engo",
+			"revision": "f2f59aa69e2eae5fd6ce3490cd4da5f8de68317f",
+			"revisionTime": "2017-01-27T22:05:55Z"
+		},
+		{
+			"checksumSHA1": "65x+xW6WheIw+naIty68b7kdeSI=",
+			"path": "engo.io/engo/common",
+			"revision": "f2f59aa69e2eae5fd6ce3490cd4da5f8de68317f",
+			"revisionTime": "2017-01-27T22:05:55Z"
+		},
+		{
+			"checksumSHA1": "vNVLfroXXnPar4H2U4ML0Ro1ZRk=",
+			"path": "engo.io/gl",
+			"revision": "dbd3b277fe443f235d09dd4dd2fa7cfff49505a4",
+			"revisionTime": "2016-05-13T18:04:40Z"
+		},
+		{
 			"checksumSHA1": "yXrS4e4yxaRBu/MX+39X3cS4kbg=",
 			"path": "github.com/Sirupsen/logrus",
 			"revision": "a283a10442df8dc09befd873fab202bf8a253d6a",
 			"revisionTime": "2016-07-16T02:56:31Z"
+		},
+		{
+			"checksumSHA1": "uz/B0mwLDKSYjp58tHlixCCbKzg=",
+			"path": "github.com/engoengine/math",
+			"revision": "afa637dd62b55bcb27f65fe1325d81bd79b32574",
+			"revisionTime": "2016-10-10T13:16:27Z"
+		},
+		{
+			"checksumSHA1": "U/OPZ17qvPEmzpqxAO5v7wLsm24=",
+			"path": "github.com/engoengine/math/imath",
+			"revision": "afa637dd62b55bcb27f65fe1325d81bd79b32574",
+			"revisionTime": "2016-10-10T13:16:27Z"
+		},
+		{
+			"checksumSHA1": "OWqHv1gVrS3yx4aS8tcX6uKd8XM=",
+			"path": "github.com/go-gl/gl/v2.1/gl",
+			"revision": "b303bcb3e83b7ef645a5104e1c2db7f8d9e8918a",
+			"revisionTime": "2016-08-14T23:08:23Z"
+		},
+		{
+			"checksumSHA1": "mkbtasagPoieaODTCLWx2A3lBBU=",
+			"path": "github.com/go-gl/glfw/v3.1/glfw",
+			"revision": "eecd6608b5674c04450c6e27b207340a57d27348",
+			"revisionTime": "2017-01-24T09:12:34Z",
+			"tree": true
+		},
+		{
+			"checksumSHA1": "owjtik+cmshWEjTrEqI59gVFmH0=",
+			"path": "github.com/go-gl/mathgl/mgl32",
+			"revision": "9e3ea3e806141087fbb83a8a8e7038bf73eff120",
+			"revisionTime": "2016-07-20T10:16:10Z"
+		},
+		{
+			"checksumSHA1": "w01kP96jx5UAf+uWB8m0w8Xghas=",
+			"path": "github.com/golang/freetype",
+			"revision": "d9be45aaf7452cc30c0ceb1b1bf7efe1d17b7c87",
+			"revisionTime": "2016-12-08T06:47:10Z"
+		},
+		{
+			"checksumSHA1": "aJ/kX/eCUlrCJBZ26Hwh/RXzAIw=",
+			"path": "github.com/golang/freetype/raster",
+			"revision": "d9be45aaf7452cc30c0ceb1b1bf7efe1d17b7c87",
+			"revisionTime": "2016-12-08T06:47:10Z"
+		},
+		{
+			"checksumSHA1": "M5K0e+YbpnI/3x9iNF/VOgOFnes=",
+			"path": "github.com/golang/freetype/truetype",
+			"revision": "d9be45aaf7452cc30c0ceb1b1bf7efe1d17b7c87",
+			"revisionTime": "2016-12-08T06:47:10Z"
 		},
 		{
 			"checksumSHA1": "Ok3Csn6Voou7pQT6Dv2mkwpqFtw=",
@@ -79,6 +152,24 @@
 			"path": "github.com/x-cray/logrus-prefixed-formatter",
 			"revision": "78e945f7d6bfe5a81ce6121d92d8118e44303e58",
 			"revisionTime": "2016-06-25T16:39:23Z"
+		},
+		{
+			"checksumSHA1": "+U1IB5N4LDS74y4fXjARb4/S4IE=",
+			"path": "golang.org/x/image/font",
+			"revision": "69afd001f792d732a78bd7225793315a8deb09ea",
+			"revisionTime": "2017-01-21T05:32:42Z"
+		},
+		{
+			"checksumSHA1": "8C1Wo1n41eZziU9fDQT7Bic5WSg=",
+			"path": "golang.org/x/image/math/f32",
+			"revision": "69afd001f792d732a78bd7225793315a8deb09ea",
+			"revisionTime": "2017-01-21T05:32:42Z"
+		},
+		{
+			"checksumSHA1": "euzvwlMLxyD0hwc+raoVsDLv6j4=",
+			"path": "golang.org/x/image/math/fixed",
+			"revision": "69afd001f792d732a78bd7225793315a8deb09ea",
+			"revisionTime": "2017-01-21T05:32:42Z"
 		},
 		{
 			"checksumSHA1": "8fD/im5Kwvy3JgmxulDTambmE8w=",
